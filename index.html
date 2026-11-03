@@ -3339,6 +3339,7 @@ function MockNet(){
     on(t,f){(h[t]=h[t]||[]).push(f);},
     create(me){
       room={code:rcode(),host:me.id,mode:'ffa',map:'random',seats:[{id:me.id,name:me.name,ch:me.ch,ready:false,team:0}]};deadline();push();
+      if(/github\.io$/.test(location.hostname))return;
       [1200,2800,4600].forEach((ms,i)=>later(ms,()=>{if(!room||started||room.seats.length>=8)return;const b=bot(i+1);room.seats.push(b);push();emit('notice',b.name+' 加入了房間');botLife(b);}));
     },
     join(code,me){
@@ -3381,7 +3382,7 @@ function lbOpen(){LB.open=true;LB.me=LB.me||lbLoadMe();$('lobby').hidden=false;l
     if(db)LB.lobUnsub=db.onValue('lobby',v=>lbRooms(v));
     else lbRooms({'5566':{n:'阿伯',m:'ffa',map:'beach',c:3,x:8,t:Date.now()},'8787':{n:'小美',m:'team',map:'random',c:2,x:8,t:Date.now()-60000},'9453':{n:'胖虎仔',m:'boss',map:'random',c:1,x:4,t:Date.now()-120000}},true);});
   const m=document.querySelector('.lb-mock');m.textContent='連線中⋯';
-  netInit().then(db=>{m.textContent=db?(db.kind==='local'?'本機測試模式：同一台電腦開兩個分頁就能互打。':'已連上伺服器！開房間後把 4 位數房號傳給朋友。'):'連不上伺服器，先用練習模式：房間裡的「好友」是電腦假扮的。';m.classList.toggle('ok',!!db);});}
+  netInit().then(db=>{m.textContent=db?(db.kind==='local'?'本機測試模式：同一台電腦開兩個分頁就能互打。':'已連上伺服器！開房間後把 4 位數房號傳給朋友。'):(/github\.io$/.test(location.hostname)?'連不上伺服器，現在只能補電腦自己打。檢查網路後重開一次試試。':'練習模式：這裡連不到伺服器，房間裡的人都是電腦。');m.classList.toggle('ok',!!db);});}
 function lbClose(keep){LB.open=false;$('lobby').hidden=true;lbClear();if(keep)return;netStop();LB.inMatch=false;if(LB.net)LB.net.leave();LB.net=null;LB.room=null;}
 function lbShow(sc){LB.screen=sc;['home','room','count'].forEach(k=>$('lb-'+k).hidden=k!==sc);if(sc==='home')$('lb-name').value=LB.me.name;if(sc==='room')lbRoom();}
 function lbNote(t){const n=$('lb-note');n.textContent=t;n.classList.remove('off');clearTimeout(n._t);n._t=setTimeout(()=>n.classList.add('off'),2200);}
@@ -3445,7 +3446,7 @@ function lbRoom(){
       const bub=LB.bubbles[s.id]&&performance.now()-LB.bubbles[s.id].t<2600?`<i class="bubble">${EMOTES[LB.bubbles[s.id].e]}</i>`:'';
       d.innerHTML=`${bub}<canvas class="spf" width="120" height="120" data-ch="${s.ch}" data-id="${s.id}" data-alt="${dup?1:0}"></canvas>
         <b class="sn">${s.id===r.host?'<span class="crown">房主</span>':''}${escapeHtml(s.name)}</b>
-        <span class="kind ${s.cpu?'k-c':'k-p'}">${s.cpu?'電腦':'玩家'}</span>
+        <span class="kind ${s.cpu||s.bot?'k-c':'k-p'}">${s.cpu||s.bot?'電腦':'玩家'}</span>
         ${host&&s.cpu?`<select class="cpu-ch" data-id="${s.id}" aria-label="${escapeHtml(s.name)} 的角色">${CKEYS.map(k=>`<option value="${k}" ${k===s.ch?'selected':''}>${CHARS[k].name}</option>`).join('')}</select>`:`<small>${CHARS[s.ch].name}${dup?'（異色）':''}${s.cpu?'・'+({easy:'很廢',normal:'普通',hard:'很兇'}[s.lv||'normal']):''}</small>`}
         ${host&&s.cpu?`<span class="lvs">${['easy','normal','hard'].map(l=>`<button data-a="lv" data-id="${s.id}" data-lv="${l}" aria-pressed="${(s.lv||'normal')===l}">${{easy:'很廢',normal:'普通',hard:'很兇'}[l]}</button>`).join('')}</span>`:''}
         <span class="st ${s.ready?'ok':''}">${s.ready?'準備好了':'選角中⋯'}</span>
@@ -3495,7 +3496,7 @@ function lbLaunch(){
     setup={mode:st.mode||r.mode,map:st.map,boss:st.boss||'random',seed:st.seed,slots:seats.map(s=>{const mine=s.id===LB.me.id;return{ch:s.ch,cpu:!mine,remote:!mine&&!s.cpu,uid:s.id,lv:s.lv||null,team:s.team||0,name:s.name,tag:mine?'你':s.cpu?'電腦':'玩家'};})};
     netGameStart(LB.net,r.host===LB.me.id,st.seed);LB.inMatch=true;lbClose(true);
   }else{
-    setup={mode:r.mode,map:r.map,boss:r.boss||'random',slots:r.seats.map(s=>({ch:s.ch,cpu:s.id!==LB.me.id,lv:s.lv||null,team:s.team||0,name:s.name,tag:s.id===LB.me.id?'你':s.cpu?'電腦':'玩家'}))};
+    setup={mode:r.mode,map:r.map,boss:r.boss||'random',slots:r.seats.map(s=>({ch:s.ch,cpu:s.id!==LB.me.id,lv:s.lv||null,team:s.team||0,name:s.name,tag:s.id===LB.me.id?'你':'電腦'}))};
     lbClose();
   }
   menuEl.hidden=true;sysEl.hidden=true;setupEl.hidden=true;syncPicks();netOverBtns();
