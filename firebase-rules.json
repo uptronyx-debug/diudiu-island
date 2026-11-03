@@ -1,0 +1,17 @@
+{
+  "rules": {
+    "rooms": {
+      "$code": {
+        ".read": "auth != null",
+        ".write": "auth != null && (!data.exists() || data.child('meta/host').val() === auth.uid)",
+        "seats": {
+          "$uid": {
+            ".write": "auth != null && ($uid === auth.uid || root.child('rooms/' + $code + '/meta/host').val() === auth.uid)"
+          }
+        },
+        "emo": { ".write": "auth != null" },
+        "game": { ".write": "auth != null" }
+      }
+    }
+  }
+}
