@@ -758,6 +758,16 @@ ol.road li{border-color:#d9b98a}
 .fx-opt canvas{width:36px;height:36px;flex:none}
 .fx-sw{flex:none;width:36px;height:26px;border-radius:8px;border:2px solid var(--ink);display:grid;place-items:center;font:900 15px var(--font-num);font-style:normal}
 .fx-sw.rnd{background:repeating-linear-gradient(45deg,#ffd27a 0 6px,#fff 6px 12px)}
+
+/* tagline: a slapped-on warning sticker */
+.tag,.mn-sub{display:inline-flex!important;align-items:center;gap:8px;background:#ff6b5b;color:#fff!important;font:900 clamp(15px,2.2vw,19px) var(--font-display)!important;padding:4px 16px 5px 10px;border:3px solid var(--ink);border-radius:10px 14px 9px 12px;box-shadow:0 4px 0 var(--ink);transform:rotate(-3deg);letter-spacing:.06em;text-shadow:0 2px 0 rgba(59,39,22,.35);width:max-content;max-width:100%;position:relative}
+.tag::before,.mn-sub::before{content:"";flex:none;width:22px;height:22px;border-radius:50%;background:#fff;border:2.5px solid var(--ink);
+  background-image:linear-gradient(45deg,transparent 43%,#ff6b5b 43% 57%,transparent 57%),radial-gradient(circle,#fff 0 100%);box-shadow:inset 0 0 0 3px #ff6b5b}
+.tag::after,.mn-sub::after{content:"";position:absolute;top:-7px;right:14px;width:34px;height:12px;background:rgba(255,248,230,.85);border:1.5px dashed rgba(59,39,22,.35);transform:rotate(8deg)}
+.tag{margin:6px 0 0 6px!important}
+.mn-sub{margin:4px auto 0!important}
+.seat .fx-btn{min-width:0;width:100%;max-width:150px;padding:2px 6px 2px 10px;min-height:30px;font-size:13px;margin-top:2px}
+.seat .fx-btn i{width:18px;height:18px}
 </style>
 
 <div class="wrap">
@@ -2974,6 +2984,7 @@ function MockNet(){
       else if(t==='addcpu'&&room.seats.length<(room.mode==='boss'?4:8)){room.seats.push({id:'cpu'+rid(),name:'電腦'+(room.seats.filter(x=>x.cpu).length+1),ch:CKEYS[Math.floor(Math.random()*CKEYS.length)],ready:true,cpu:true,team:room.seats.length%2});}
       else if(t==='redeadline'&&s===undefined){deadline();}
       else if(t==='pub'){room.pub=!!d.on;}
+      else if(t==='cpuch'){const c2=room.seats.find(x=>x.id===d.id&&x.cpu);if(c2)c2.ch=d.ch;}
       else if(t==='emote'){emit('emote',d);return;}
       push();
     },
@@ -3058,12 +3069,13 @@ function lbRoom(){
       const bub=LB.bubbles[s.id]&&performance.now()-LB.bubbles[s.id].t<2600?`<i class="bubble">${EMOTES[LB.bubbles[s.id].e]}</i>`:'';
       d.innerHTML=`${bub}<canvas class="spf" width="120" height="120" data-ch="${s.ch}" data-id="${s.id}" data-alt="${dup?1:0}"></canvas>
         <b class="sn">${s.id===r.host?'<span class="crown">房主</span>':''}${escapeHtml(s.name)}</b>
-        <small>${CHARS[s.ch].name}${dup?'（異色）':''}${s.cpu?'・電腦':s.bot?'・好友':''}</small>
+        ${host&&s.cpu?`<select class="cpu-ch" data-id="${s.id}" aria-label="${escapeHtml(s.name)} 的角色">${CKEYS.map(k=>`<option value="${k}" ${k===s.ch?'selected':''}>${CHARS[k].name}</option>`).join('')}</select>`:`<small>${CHARS[s.ch].name}${dup?'（異色）':''}${s.cpu?'・電腦':s.bot?'・好友':''}</small>`}
         <span class="st ${s.ready?'ok':''}">${s.ready?'準備好了':'選角中⋯'}</span>
         ${team?`<button class="tchip t${s.team}" data-a="team" data-id="${s.id}" ${host||s.id===LB.me.id?'':'disabled'}>${TNAME[s.team]}</button>`:''}
         ${host&&s.id!==LB.me.id?`<button class="kick" data-a="kick" data-id="${s.id}" aria-label="請 ${escapeHtml(s.name)} 離開">✕</button>`:''}`;
     }
     box.appendChild(d);
+    const cs=d.querySelector('select.cpu-ch');if(cs)cs.addEventListener('change',()=>{LB.net&&LB.net.send('cpuch',{id:cs.dataset.id,ch:cs.value});lbFx(cs.dataset.id);});
   }
   const me=mySeat(),pk=$('lb-picks');
   if(!pk.children.length){CKEYS.forEach(k=>{const b=document.createElement('button');b.className='pkc';b.dataset.ch=k;b.innerHTML=`<canvas width="96" height="96" data-ch="${k}" data-id="pk-${k}"></canvas><b>${CHARS[k].name}</b><small>${PASSIVE[k].name}</small>`;
@@ -3314,6 +3326,7 @@ function FireNet(db){
       else if(t==='emote')db.push(P('emo'),{id:me.id,e:d.e,t:db.now()});
       else if(t==='redeadline'&&amHost)db.set(P('meta/deadline'),db.now()+PICK_SEC*1000);
       else if(t==='pub'&&amHost)db.set(P('meta/pub'),!!d.on);
+      else if(t==='cpuch'&&amHost&&CHARS[d.ch])db.set(P('seats/'+d.id+'/ch'),d.ch);
     },
     async backToRoom(){ // after a match: host clears the old game, everyone un-readies
       if(host()){const now=db.now(),up={};seats.forEach(s=>{if(!s.cpu)up[s.id+'/ready']=false;});await db.update(P('seats'),up);await db.set(P('meta/deadline'),now+PICK_SEC*1000);await db.remove(P('game'));await db.remove(P('start'));}
