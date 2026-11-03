@@ -693,6 +693,23 @@ ol.road li{border-color:#d9b98a}
 .mn-logo{text-shadow:none!important;line-height:0!important}
 .mn-logo img{width:clamp(220px,42cqw,440px);height:auto;display:block}
 @container (max-height:520px){.mn-logo img{width:clamp(180px,34cqw,320px)}}
+
+/* item guide: stickers on the sand */
+.ii-head{margin-top:26px}
+.ii-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:26px 18px;padding:6px 0 10px}
+.ii{width:min(30%,280px);display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px}
+.ii:nth-child(3n+1){transform:rotate(-1.6deg)}.ii:nth-child(3n+2){transform:rotate(1.4deg) translateY(10px)}.ii:nth-child(3n){transform:rotate(-.6deg) translateY(4px)}
+.ii-ic{width:104px;height:104px;border-radius:46% 54% 50% 50%/52% 46% 54% 48%;background:#fff;border:4px solid var(--ink);box-shadow:0 6px 0 rgba(59,39,22,.25);display:grid;place-items:center}
+.ii:nth-child(even) .ii-ic{background:#e3f6ff}.ii:nth-child(3n) .ii-ic{background:#ffe6a8}
+.ii-ic canvas{animation:pkbob 2.6s ease-in-out infinite}
+.ii:nth-child(even) .ii-ic canvas{animation-delay:-1.3s}
+.ii h3{margin:4px 0 0;font:900 21px var(--font-display);color:var(--ink);display:flex;align-items:center;gap:6px}
+.ii h3 i{font:800 12px var(--font-num);font-style:normal;background:var(--ink);color:#fff;border-radius:999px;padding:0 7px;transform:rotate(8deg)}
+.ii-fun{margin:0;font-size:13.5px;color:var(--ink2);font-weight:600}
+.ii-do{position:relative;margin:8px 0 0;background:#fff;color:var(--ink);border:2.5px solid var(--ink);border-radius:18px 22px 16px 20px;padding:7px 12px;font-size:13.5px;box-shadow:0 4px 0 var(--ink)}
+.ii-do::before{content:"";position:absolute;left:50%;top:-11px;width:16px;height:13px;margin-left:-8px;background:#fff;border:2.5px solid var(--ink);border-bottom:0;border-right:0;transform:skewX(30deg) rotate(8deg)}
+@media (max-width:700px){.ii{width:44%}.ii-ic{width:84px;height:84px}.ii-ic canvas{width:52px!important;height:52px!important}.ii h3{font-size:18px}}
+.ii[data-k=calm] .ii-ic{background:#8fd0ee}
 </style>
 
 <div class="wrap">
@@ -813,6 +830,8 @@ ol.road li{border-color:#d9b98a}
       </div>
     </div>
     <div class="roster-grid" id="roster"></div>
+    <div class="roster-head ii-head"><div><h2>道具</h2><p>開場看完對手是誰，再撿 3 樣帶進場。</p></div></div>
+    <div class="ii-grid" id="ii-grid"></div>
     </div>
   </section>
 
@@ -3291,6 +3310,9 @@ lbWire();
 $('mn-crowd').innerHTML=CKEYS.map((k,i)=>`<canvas width="110" height="110" data-ch="${k}" data-id="mc-${k}"></canvas>`).join('');
 stageEl.addEventListener('pointerdown',e=>{if(intro&&menuEl.hidden&&sysEl.hidden&&setupEl.hidden&&e.target.closest('#cv,.hud,.stage>canvas')!==null)endIntro();},true);
 let previewAnim='idle';
+(()=>{const box=$('ii-grid');IKEYS.forEach((k,i)=>{const d=document.createElement('div');d.className='ii';d.dataset.k=k;
+  d.innerHTML=`<div class="ii-ic"></div><h3>${ITEMS[k].name}<i>×${ITEMS[k].n}</i></h3><p class="ii-fun">${ITEMFUN[k]}</p><p class="ii-do">${ITEMS[k].desc}</p>`;
+  d.querySelector('.ii-ic').appendChild(iconCanvas(k,64));box.appendChild(d);});})();
 const rosterEl=$('roster'),rcs=[];
 CKEYS.forEach(k=>{
   const d=document.createElement('div');d.className='rc';
