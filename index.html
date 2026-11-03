@@ -914,6 +914,50 @@ ol.road li{border-color:#d9b98a}
 .sh-app.line{background:#06c755}.sh-app.msg{background:#7b5cff}.sh-app.wa{background:#25d366}.sh-app.tg{background:#2aa3e0}.sh-app.cp{background:#fff;color:var(--ink)}
 .mn-sub{transform:translateX(clamp(-120px,-9cqw,-40px)) rotate(-4deg)!important}
 @media (max-height:560px){.lb-invite{padding:3px 10px;font-size:12px}.sh-card{padding:8px 16px 10px;gap:5px}.sh-card h3{font-size:18px}.sh-app{padding:4px 10px;font-size:13px}}
+
+/* boss HUD across the top */
+.boss-hud:not([hidden]){position:absolute;left:50%;top:max(4px,var(--st));transform:translateX(-50%);width:min(52%,520px);z-index:4;pointer-events:none}
+.boss-hud .pr.boss{width:100%!important;grid-template-columns:auto minmax(0,1fr) auto!important;grid-template-areas:"pf nm tg" "pf bar bar"!important;font-size:1.05em}
+.boss-hud .pr.boss .pf{width:46px!important;height:46px!important;border-color:#2b2118;box-shadow:0 0 0 3px #ff5d5d,0 0 0 6px #2b2118!important}
+.boss-hud .pr.boss .bar{height:17px!important;border-width:3px!important}
+.boss-hud .pr.boss .bar em{background:linear-gradient(#ff9d8a,#e8432b)!important}
+.boss-hud .pr.boss .nm{color:#ffe066;font-size:1.15em}
+.boss-hud .pr.boss .tg{background:#ff5d5d!important;color:#fff!important}
+.stage.bossmode .plist.r{display:none}
+@container (max-height:520px){.boss-hud .pr.boss .pf{width:32px!important;height:32px!important}.boss-hud .pr.boss .bar{height:12px!important}}
+/* kid-friendly player slots */
+.su-slots:not(.split){display:flex!important;flex-wrap:wrap;justify-content:center;gap:12px 10px}
+.slot.kid{display:flex!important;flex-direction:column;align-items:center;gap:4px;width:118px;max-width:none!important;flex:none!important;padding:6px 6px 8px!important;border:3px solid var(--ink)!important;border-radius:26px 30px 22px 28px!important;background:#fff!important;box-shadow:0 4px 0 var(--ink),inset 0 -6px 0 var(--sc)!important;position:relative}
+.slot.kid.hum{background:#fff4d6!important}
+.slot.kid .sl-pf{border:0;background:radial-gradient(circle at 50% 60%,#ffe9b8,transparent 70%);padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center}
+.slot.kid .sl-pf canvas{width:74px;height:74px;display:block}
+.slot.kid .sl-pf b{font:900 15px var(--font-display);color:var(--ink);margin-top:-4px}
+.slot.kid .sl-pf::after{content:"";position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:50%;background:#ffb547 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5 8l5 5 5-5' fill='none' stroke='%233b2716' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/14px no-repeat;border:2px solid var(--ink)}
+.slot.kid .fx-btn{position:absolute!important;opacity:0;pointer-events:none;width:1px;height:1px;min-width:0;padding:0;border:0}
+.slot.kid .sl-who{display:flex;align-items:center;gap:4px;border:2.5px solid var(--ink)!important;border-radius:999px;padding:2px 10px 2px 4px!important;font:900 13px var(--font-display)!important;background:#c9c2b0!important;color:var(--ink)!important;cursor:pointer}
+.slot.kid .sl-who.hum{background:#5fc4ff!important}
+.slot.kid .ic{width:22px;height:22px;border-radius:50%;border:2px solid var(--ink);background:#fff center/16px no-repeat;flex:none}
+.slot.kid .ic.kid{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ccircle cx='10' cy='7' r='4' fill='%23ffb547' stroke='%233b2716' stroke-width='1.8'/%3E%3Cpath d='M3 18c1-4 4-6 7-6s6 2 7 6' fill='%23ff8a5c' stroke='%233b2716' stroke-width='1.8'/%3E%3C/svg%3E")}
+.slot.kid .ic.bot{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Crect x='3' y='5' width='14' height='11' rx='3' fill='%23bfe9ff' stroke='%233b2716' stroke-width='1.8'/%3E%3Ccircle cx='7.5' cy='10.5' r='1.6' fill='%233b2716'/%3E%3Ccircle cx='12.5' cy='10.5' r='1.6' fill='%233b2716'/%3E%3Cpath d='M10 5V2' stroke='%233b2716' stroke-width='1.8'/%3E%3C/svg%3E")}
+.slot.kid .sl-sw{position:absolute;top:6px;left:6px;width:26px;height:26px;border-radius:50%;border:2.5px solid var(--ink)!important;padding:0!important;font:900 14px var(--font-num)!important;background:var(--sc)!important;color:#fff!important;cursor:pointer}
+.slot.kid .dot{display:none}
+.slot.kid:nth-child(odd){transform:rotate(-2deg)}.slot.kid:nth-child(even){transform:rotate(2deg)}
+.su-team .slot.kid{width:118px;align-self:center}
+.su-team{flex-direction:row!important;flex-wrap:wrap;justify-content:center;align-content:flex-start}
+.su-team h4{flex-basis:100%}
+.seg .face{display:inline-block;width:16px;height:16px;border-radius:50%;border:2px solid currentColor;margin-right:4px;vertical-align:-3px;background:#fff center/12px no-repeat}
+.face.f-easy{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 5h2M7.5 5h2M4 8.5h4' stroke='%233b2716' stroke-width='1.4' stroke-linecap='round'/%3E%3C/svg%3E")}
+.face.f-normal{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Ccircle cx='4' cy='5' r='1' fill='%233b2716'/%3E%3Ccircle cx='8' cy='5' r='1' fill='%233b2716'/%3E%3Cpath d='M3.5 7.5q2.5 2 5 0' fill='none' stroke='%233b2716' stroke-width='1.3' stroke-linecap='round'/%3E%3C/svg%3E")}
+.face.f-hard{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 3.5l2.5 1.5M9.5 3.5L7 5' stroke='%23e8322b' stroke-width='1.5' stroke-linecap='round'/%3E%3Ccircle cx='4.2' cy='6' r='.9' fill='%233b2716'/%3E%3Ccircle cx='7.8' cy='6' r='.9' fill='%233b2716'/%3E%3Cpath d='M3.5 9.5q2.5-1.8 5 0' fill='none' stroke='%233b2716' stroke-width='1.3' stroke-linecap='round'/%3E%3C/svg%3E")}
+#su-note:not(.err){display:none}
+@container (max-height:520px){
+  .slot.kid,.su-team .slot.kid{width:92px;padding:3px 4px 5px!important;gap:2px}
+  .slot.kid .sl-pf canvas{width:52px;height:52px}.slot.kid .sl-pf b{font-size:12.5px}
+  .slot.kid .sl-who{font-size:11px!important;padding:1px 8px 1px 3px!important}.slot.kid .ic{width:18px;height:18px}
+  .slot.kid .sl-pf::after{width:16px;height:16px;background-size:11px;top:4px;right:4px}
+  .slot.kid .sl-sw{width:22px;height:22px;font-size:12px!important;top:3px;left:3px}
+  .su-slots:not(.split){gap:8px 6px}
+}
 </style>
 
 <div class="wrap">
@@ -929,6 +973,7 @@ ol.road li{border-color:#d9b98a}
       <canvas id="cv" width="960" height="540" aria-label="遊戲畫面，可以直接拖曳來瞄準"></canvas>
       <div class="hud" aria-hidden="true">
         <div class="plist" id="pl-a"></div>
+        <div class="boss-hud" id="boss-hud" hidden></div>
         <div class="mid"><div class="wind" id="wind-box"><i>風</i><span id="w-arrow"></span><b id="w-val"></b></div><small id="h-turn">第 1 回合</small></div>
         <div class="plist r" id="pl-b"></div>
       </div>
@@ -1014,7 +1059,7 @@ ol.road li{border-color:#d9b98a}
         <div class="setup-in">
           <h3>開打前喬一下</h3>
           <div class="su-row"><span>模式</span><b class="su-modename" id="su-modename"></b><button class="ghost2 sm" id="su-remode">換模式</button></div>
-          <div class="su-row"><span>電腦</span><div class="seg" role="group" aria-label="電腦難度" id="diff"><button data-d="easy" aria-pressed="false">很廢</button><button data-d="normal" aria-pressed="true">普通</button><button data-d="hard" aria-pressed="false">很兇</button></div></div>
+          <div class="su-row"><span>電腦</span><div class="seg" role="group" aria-label="電腦難度" id="diff"><button data-d="easy" aria-pressed="false"><i class="face f-easy"></i>很廢</button><button data-d="normal" aria-pressed="true"><i class="face f-normal"></i>普通</button><button data-d="hard" aria-pressed="false"><i class="face f-hard"></i>很兇</button></div></div>
           <div class="su-row"><span>地圖</span><select id="su-map" class="su-sel" aria-label="地圖"></select></div>
           <div class="su-row" id="su-bossrow" hidden><span>魔王</span><select id="su-boss" class="su-sel" aria-label="魔王"></select></div>
           <div class="su-row"><span>人數</span><div class="stepper"><button id="su-minus" aria-label="減少">−</button><b id="su-n">4</b><button id="su-plus" aria-label="增加">＋</button></div><small id="su-hint"></small></div>
@@ -2684,7 +2729,8 @@ let lastSec=0;
 function drawSky(){
   if(!players)return;
   const sc=(cv.clientWidth||VW)/VW,u=Math.max(1,Math.min(1.9,.62/sc)),tm=performance.now()/1000,dir=Math.sign(wind),str=Math.abs(wind),INKC='#2b2118';
-  ctx.save();ctx.translate(VW/2,(36+Math.sin(tm*2)*2)*u);ctx.scale(u,u);
+  const bOff=setup.mode==='boss'?62/Math.max(.3,sc):0;
+  ctx.save();ctx.translate(VW/2,(36+Math.sin(tm*2)*2)*u+bOff);ctx.scale(u,u);
   // turn plank hanging below
   ctx.strokeStyle='#5a3a1e';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-18,16);ctx.lineTo(-22,34);ctx.moveTo(18,16);ctx.lineTo(22,34);ctx.stroke();
   ctx.save();ctx.translate(0,44);ctx.rotate(Math.sin(tm*1.6)*.05);
@@ -2922,15 +2968,16 @@ function drawBanner(){
 const $=id=>document.getElementById(id);
 let hudEls=[];
 function buildHud(){
-  const a=$('pl-a'),b=$('pl-b');a.innerHTML='';b.innerHTML='';hudEls=[];
+  const a=$('pl-a'),b=$('pl-b');a.innerHTML='';b.innerHTML='';$('boss-hud').innerHTML='';hudEls=[];
   const team=setup.mode==='team',half=Math.ceil(players.length/2);
   players.forEach((p,i)=>{
     const r=document.createElement('div');r.className='pr';
     r.innerHTML=`<canvas class="pf" width="76" height="76"></canvas><span class="nm"></span><small class="tg"></small><span class="v"></span><b class="bar"><em></em></b>`;r.style.setProperty('--pc',p.color);
-    (team?(p.team===0?a:b):(i<half?a:b)).appendChild(r);
+    const bm=setup.mode==='boss';
+    if(p.boss){r.classList.add('boss');$('boss-hud').appendChild(r);}else(bm?a:team?(p.team===0?a:b):(i<half?a:b)).appendChild(r);
     hudEls[i]={r,pc:r.querySelector('.pf').getContext('2d'),nm:r.querySelector('.nm'),v:r.querySelector('.v'),bar:r.querySelector('.bar em'),tag:r.querySelector('.tg')};
   });
-  stageEl.style.setProperty('--rows',Math.max(a.children.length,b.children.length));
+  stageEl.style.setProperty('--rows',Math.max(a.children.length,b.children.length));$('boss-hud').hidden=setup.mode!=='boss';stageEl.classList.toggle('bossmode',setup.mode==='boss');
 }
 function setT(el,v){if(el._v!==v){el._v=v;el.textContent=v;}}
 function setW(el,v){v=Math.round(v*10)/10;if(el._w!==v){el._w=v;el.style.width=v+'%';}}
@@ -3126,10 +3173,11 @@ function drawSetup(){
   draft.slots.forEach((sl,i)=>{
     const d=document.createElement('div');d.className='slot';
     const col=team?TCOL[sl.team]:PCOL[i];
-    d.innerHTML=`<i class="dot" style="background:${col}"></i><select aria-label="第 ${i+1} 位角色">${CKEYS.map(k=>`<option value="${k}" ${k===sl.ch?'selected':''}>${CHARS[k].name}・${CHARS[k].title}</option>`).join('')}</select><button class="${sl.cpu?'':'hum'}">${sl.cpu?'電腦':'玩家'}</button>${team?`<button class="t${sl.team}">換到${TNAME[1-sl.team]}</button>`:''}`;
-    d.querySelector('select').onchange=e=>{sl.ch=e.target.value;};
-    const bs=d.querySelectorAll('button');bs[0].onclick=()=>{sl.cpu=!sl.cpu;drawSetup();};
-    if(team)bs[1].onclick=()=>{sl.team=1-sl.team;drawSetup();};
+    d.className='slot kid'+(sl.cpu?' cpu':' hum')+(team?' t'+sl.team:'');d.style.setProperty('--sc',col);
+    d.innerHTML=`<button class="sl-pf" aria-label="換角色"><canvas width="120" height="120" data-ch="${sl.ch}" data-id="su-${i}"></canvas><b>${CHARS[sl.ch].name}</b></button><select aria-label="第 ${i+1} 位角色">${CKEYS.map(k=>`<option value="${k}" ${k===sl.ch?'selected':''}>${CHARS[k].name}</option>`).join('')}</select><button class="sl-who ${sl.cpu?'':'hum'}" aria-label="${sl.cpu?'電腦':'玩家'}，點一下切換"><i class="ic ${sl.cpu?'bot':'kid'}"></i>${sl.cpu?'電腦':'玩家'}</button>${team?`<button class="sl-sw" aria-label="換到${TNAME[1-sl.team]}">⇄</button>`:''}`;
+    const sel2=d.querySelector('select');sel2.onchange=e=>{sl.ch=e.target.value;lbFx('su-'+i);drawSetup();};d.querySelector('.sl-pf').onclick=e=>{e.stopPropagation();fxEnhance($('setup'));sel2._fx&&sel2._fx.click();};
+    d.querySelector('.sl-who').onclick=()=>{sl.cpu=!sl.cpu;SFX.click();drawSetup();};
+    if(team)d.querySelector('.sl-sw').onclick=()=>{sl.team=1-sl.team;SFX.click();drawSetup();};
     (cols?cols[sl.team||0]:box).appendChild(d);
   });
   const note=$('su-note');let ok=true;
@@ -3412,6 +3460,7 @@ function drawMenu(now){
   const t=now/1000;let sel=null;
   if(!menuEl.hidden)sel='#menu canvas[data-ch]';
   if(!pickEl.hidden)sel=(sel?sel+',':'')+'#pick-who canvas';
+  if(!setupEl.hidden)sel=(sel?sel+',':'')+'#setup canvas[data-ch]';
   if(!sel)return;
   if(Math.random()<.02){const cs=document.querySelectorAll('#mn-crowd canvas');if(cs.length)lbFx(cs[Math.floor(Math.random()*cs.length)].dataset.id);}
   document.querySelectorAll(sel).forEach((cv2,i)=>{const c=cv2.getContext('2d'),k=cv2.dataset.ch,w=cv2.width;c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,w,w);
