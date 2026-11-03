@@ -901,6 +901,19 @@ ol.road li{border-color:#d9b98a}
 .ins-card .mn-big{padding:6px 26px;font-size:18px;margin-top:4px}
 .ghost2.inst{background:#b9e36a!important}
 @container (max-height:520px){.ins-card{padding:8px 18px 10px;gap:3px}.ins-card canvas{width:50px;height:50px}.ins-card h3{font-size:18px}.ins-card ol{font-size:13px;line-height:1.55}}
+
+.lb-invite{border:2.5px solid var(--ink);background:#ffb547;color:var(--ink);border-radius:999px;padding:6px 14px;font:900 14px var(--font-display);cursor:pointer;box-shadow:0 3px 0 var(--ink);transform:rotate(2deg)}
+.lb-invite:active{transform:translateY(2px) rotate(2deg);box-shadow:0 1px 0 var(--ink)}
+.lb-share:not([hidden]){position:fixed;inset:0;z-index:5;background:rgba(59,39,22,.35);display:flex;align-items:center;justify-content:center;padding:16px}
+.sh-card{background:#fff8e6;border:3px solid var(--ink);border-radius:26px 30px 22px 28px;box-shadow:0 6px 0 var(--ink);padding:14px 20px 16px;display:flex;flex-direction:column;align-items:center;gap:8px;max-width:520px;width:100%;transform:rotate(-1deg)}
+.sh-card h3{margin:0;font:900 22px var(--font-display);color:var(--ink)}
+.sh-link{margin:0;font:700 12.5px var(--font-num);color:var(--ink2);word-break:break-all;text-align:center}
+.sh-apps{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.sh-app{border:2.5px solid var(--ink);border-radius:14px;padding:7px 14px;font:900 15px var(--font-display);color:#fff;text-decoration:none;box-shadow:0 3px 0 var(--ink);cursor:pointer}
+.sh-app:nth-child(odd){transform:rotate(-2deg)}.sh-app:nth-child(even){transform:rotate(2deg)}
+.sh-app.line{background:#06c755}.sh-app.msg{background:#7b5cff}.sh-app.wa{background:#25d366}.sh-app.tg{background:#2aa3e0}.sh-app.cp{background:#fff;color:var(--ink)}
+.mn-sub{transform:translateX(clamp(-120px,-9cqw,-40px)) rotate(-4deg)!important}
+@media (max-height:560px){.lb-invite{padding:3px 10px;font-size:12px}.sh-card{padding:8px 16px 10px;gap:5px}.sh-card h3{font-size:18px}.sh-app{padding:4px 10px;font-size:13px}}
 </style>
 
 <div class="wrap">
@@ -1165,6 +1178,7 @@ ol.road li{border-color:#d9b98a}
   <div class="lb-room" id="lb-room" hidden>
     <div class="lb-top">
       <div class="lb-codebox"><small>房號</small><b id="lb-code"></b><button class="ghost2" id="lb-copy">複製</button></div>
+      <button class="lb-invite" id="lb-invite">邀請朋友</button>
       <button class="lb-pub" id="lb-pub" aria-pressed="true">公開房間</button>
       <div class="lb-timer" id="lb-timer"><small>等朋友倒數</small><b id="lb-sec">5:00</b><button class="lb-reset" id="lb-reset" title="重新倒數 5 分鐘">重新倒數</button></div>
       <button class="ghost2" id="lb-leave">離開房間</button>
@@ -1182,6 +1196,20 @@ ol.road li{border-color:#d9b98a}
     <div class="lb-bottom">
       <div class="lb-emotes" id="lb-emotes"></div>
       <div class="lb-gobox"><small id="lb-gohint"></small><button class="lb-big" id="lb-go">準備好了！</button></div>
+    </div>
+  </div>
+  <div class="lb-share" id="lb-share" hidden>
+    <div class="sh-card">
+      <h3>拉朋友來被丟</h3>
+      <p class="sh-link" id="sh-link"></p>
+      <div class="sh-apps">
+        <a class="sh-app line" id="sh-line" target="_blank" rel="noopener">LINE</a>
+        <a class="sh-app msg" id="sh-msg" target="_blank" rel="noopener">Messenger</a>
+        <a class="sh-app wa" id="sh-wa" target="_blank" rel="noopener">WhatsApp</a>
+        <a class="sh-app tg" id="sh-tg" target="_blank" rel="noopener">Telegram</a>
+        <button class="sh-app cp" id="sh-copy">複製連結</button>
+      </div>
+      <button class="ghost2" id="sh-close">關閉</button>
     </div>
   </div>
   <div class="lb-count" id="lb-count" hidden><div class="lb-cin"><p class="lb-cline" id="lb-cline"></p><b id="lb-cnum">5</b><small>秒後開打，準備被丟</small></div></div>
@@ -3417,6 +3445,22 @@ function lbWire(){
   $('lb-reset').onclick=()=>{if(!LB.net||!isHost())return;LB.net.send('redeadline',{});LB.lastSec=-1;lbNote('重新倒數 5 分鐘，慢慢等朋友');SFX.click();};
   $('lb-rooms').addEventListener('click',e=>{const b=e.target.closest('.lb-rm');if(!b)return;$('lb-joincode').value=b.dataset.code;$('lb-join').click();});
   $('lb-pub').onclick=()=>{if(!LB.net||!isHost()||!LB.room)return;const on=!(LB.room.pub!==false);LB.net.send('pub',{on});lbNote(on?'房間公開了，路人也看得到':'只給朋友：要知道房號才進得來');SFX.click();};
+  const SITE='https://uptronyx-debug.github.io/diudiu-island/';
+  const inviteUrl=()=>(/github\.io$/.test(location.hostname)?location.origin+location.pathname:SITE)+'?room='+(LB.room?LB.room.code:'');
+  const inviteText=()=>`來套丟島被我丟！房號 ${LB.room?LB.room.code:''}`;
+  const copyTxt=t=>{try{return navigator.clipboard.writeText(t);}catch(_){return Promise.reject();}};
+  $('lb-invite').onclick=async()=>{if(!LB.room)return;SFX.click();const url=inviteUrl(),txt=inviteText();
+    if(navigator.share&&matchMedia('(pointer:coarse)').matches){try{await navigator.share({title:'套丟島',text:txt,url});return;}catch(e){if(e&&e.name==='AbortError')return;}}
+    const both=txt+' '+url,enc=encodeURIComponent;
+    $('sh-link').textContent=url;
+    $('sh-line').href='https://line.me/R/share?text='+enc(both);
+    $('sh-msg').href=matchMedia('(pointer:coarse)').matches?'fb-messenger://share?link='+enc(url):'https://www.facebook.com/sharer/sharer.php?u='+enc(url);
+    $('sh-wa').href='https://wa.me/?text='+enc(both);
+    $('sh-tg').href='https://t.me/share/url?url='+enc(url)+'&text='+enc(txt);
+    $('lb-share').hidden=false;};
+  $('sh-copy').onclick=()=>{const t=inviteText()+' '+inviteUrl();copyTxt(t).then(()=>lbNote('連結複製好了，去貼給朋友'),()=>lbNote(t));SFX.click();};
+  $('sh-close').onclick=()=>{$('lb-share').hidden=true;};
+  $('lb-share').addEventListener('click',e=>{if(e.target.id==='lb-share')$('lb-share').hidden=true;});
   $('lb-copy').onclick=()=>{const c=$('lb-code').textContent;try{navigator.clipboard.writeText(c).then(()=>lbNote('已複製房號 '+c),()=>lbNote('房號：'+c));}catch(_){lbNote('房號：'+c);}};
   document.querySelectorAll('#lb-mode button').forEach(b=>b.onclick=()=>{if(isHost())LB.net.send('mode',{mode:b.dataset.m});});
   $('lb-map').onchange=e=>{if(isHost())LB.net.send('map',{map:e.target.value});};
@@ -3689,6 +3733,11 @@ doJump=netWrap('jump',_doJump);doDig=netWrap('dig',_doDig);useItem=netWrap('item
 carve=function(cx,cy,r,rim){if(ON&&!ON.noLog)ON.carveLog.push([+cx.toFixed(1),+cy.toFixed(1),+r.toFixed(1)]);return _carve(cx,cy,r,rim);};
 
 lbWire();
+(()=>{let code=null;try{code=new URLSearchParams(location.search).get('room');}catch(_){}
+  if(!code||!/^\d{4}$/.test(code))return;
+  setTimeout(()=>{lbOpen();$('lb-joincode').value=code;lbNote('朋友邀你進 '+code+' 號房！');
+    netInit().then(()=>setTimeout(()=>{if(LB.screen==='home'&&!LB.net)$('lb-join').click();},400));
+    try{history.replaceState(null,'',location.pathname);}catch(_){}},500);})();
 $('mn-byecrowd').innerHTML=['pine','octo','shark','monkey','jelly'].map(k=>`<canvas width="110" height="110" data-ch="${k}" data-id="bye-${k}"></canvas>`).join('');
 $('mn-crowd').innerHTML=CKEYS.map((k,i)=>`<canvas width="110" height="110" data-ch="${k}" data-id="mc-${k}"></canvas>`).join('');
 stageEl.addEventListener('pointerdown',e=>{if(intro&&menuEl.hidden&&sysEl.hidden&&setupEl.hidden&&e.target.closest('#cv,.hud,.stage>canvas')!==null)endIntro();},true);
