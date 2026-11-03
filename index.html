@@ -891,6 +891,16 @@ ol.road li{border-color:#d9b98a}
   .mn-row .ghost2{padding:3px 12px}
 }
 .game:has(#mn-bye:not([hidden])) .tapplay{display:none!important}
+
+.mn-inst:not([hidden]){min-height:100%;display:flex;align-items:center;justify-content:center}
+.ins-card{background:#fff8e6;border:3px solid var(--ink);border-radius:26px 30px 22px 28px;box-shadow:0 6px 0 var(--ink);padding:14px 24px 18px;display:flex;flex-direction:column;align-items:center;gap:6px;max-width:440px;transform:rotate(-1deg)}
+.ins-card canvas{width:74px;height:74px}
+.ins-card h3{margin:0;font:900 22px var(--font-display);color:var(--ink)}
+.ins-card ol{margin:0;padding-left:1.4em;color:var(--ink);font:700 15px/1.7 var(--font-body);text-align:left}
+.ins-card ol b{display:inline-block;background:#5fc4ff;border:2px solid var(--ink);border-radius:6px;padding:0 5px;line-height:1.3}
+.ins-card .mn-big{padding:6px 26px;font-size:18px;margin-top:4px}
+.ghost2.inst{background:#b9e36a!important}
+@container (max-height:520px){.ins-card{padding:8px 18px 10px;gap:3px}.ins-card canvas{width:50px;height:50px}.ins-card h3{font-size:18px}.ins-card ol{font-size:13px;line-height:1.55}}
 </style>
 
 <div class="wrap">
@@ -949,7 +959,15 @@ ol.road li{border-color:#d9b98a}
           <p class="mn-sub">說好不砸臉</p>
           <div class="mn-crowd" id="mn-crowd"></div>
           <div class="mn-btns"><button class="mn-big" id="menu-solo">自己玩<small>打電腦練手感</small></button><button class="mn-big alt" id="online-open">跟朋友連線<small>開房間互丟</small></button></div>
-          <div class="mn-row"><button class="ghost2 sm mn-sys" id="menu-sys">設定</button><button class="ghost2 sm" id="menu-quit">結束遊戲</button></div>
+          <div class="mn-row"><button class="ghost2 sm mn-sys" id="menu-sys">設定</button><button class="ghost2 sm" id="menu-quit">結束遊戲</button><button class="ghost2 sm inst" id="menu-inst" hidden>放到桌面</button></div>
+        </div>
+        <div class="mn-inst" id="mn-inst" hidden>
+          <div class="ins-card">
+            <canvas width="120" height="120" data-ch="pine" data-id="ins-pine"></canvas>
+            <h3 id="ins-title">把套丟島放到桌面</h3>
+            <ol id="ins-steps"></ol>
+            <button class="mn-big" id="ins-ok">知道了</button>
+          </div>
         </div>
         <div class="mn-bye" id="mn-bye" hidden>
           <div class="mn-crowd bye" id="mn-byecrowd"></div>
@@ -3103,7 +3121,24 @@ function syncAudioBtns(){['snd-btn','snd-btn2'].forEach(id=>{const b=$(id);if(b)
 syncAudioBtns();
 /* ---- main menu / mode select / system settings ---- */
 const menuEl=$('menu'),sysEl=$('sys');
-function menuShow(sc){sysEl.hidden=true;setupEl.hidden=true;menuEl.hidden=false;$('mn-home').hidden=sc!=='home';$('mn-mode').hidden=sc!=='mode';$('mn-bye').hidden=sc!=='bye';$('over').hidden=true;}
+function menuShow(sc){sysEl.hidden=true;setupEl.hidden=true;menuEl.hidden=false;$('mn-home').hidden=sc!=='home';$('mn-mode').hidden=sc!=='mode';$('mn-bye').hidden=sc!=='bye';$('mn-inst').hidden=sc!=='inst';$('over').hidden=true;}
+/* ---- install to home screen ---- */
+let instEvt=null;
+const isStandalone=()=>{try{return matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches||navigator.standalone===true;}catch(_){return false;}};
+const UA=navigator.userAgent||'',isIOS=/iPhone|iPad|iPod/.test(UA)||(/Macintosh/.test(UA)&&navigator.maxTouchPoints>1),inApp=/Line\/|FBAN|FBAV|Instagram|MicroMessenger/i.test(UA);
+function instSync(){$('menu-inst').hidden=isStandalone()||!(matchMedia('(pointer:coarse)').matches||instEvt);}
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();instEvt=e;instSync();});
+addEventListener('appinstalled',()=>{instEvt=null;instSync();toast('裝好了！去桌面找那顆尖叫的椰子',2600);});
+try{if('serviceWorker' in navigator&&location.protocol==='https:'&&/github\.io$/.test(location.hostname))navigator.serviceWorker.register('sw.js').catch(()=>{});}catch(_){}
+instSync();
+$('menu-inst').onclick=async()=>{SFX.click();
+  if(instEvt){try{instEvt.prompt();const r=await instEvt.userChoice;instEvt=null;instSync();if(r&&r.outcome==='accepted')return;}catch(_){}}
+  let t='把套丟島放到桌面',st;
+  if(inApp)st=['這是 LINE／FB 裡的瀏覽器，沒辦法直接裝','點右上角「⋯」或「分享」','選「用預設瀏覽器開啟」（Safari 或 Chrome）','在那邊再按一次「放到桌面」'];
+  else if(isIOS)st=['點下面（或上面）的「分享」按鈕 <b>⬆︎</b>','往下滑，點「加入主畫面」','按右上角「新增」，桌面就會多一顆椰子'];
+  else st=['點右上角的「⋮」選單','選「加到主畫面」或「安裝應用程式」','按「安裝」，桌面就會多一顆椰子'];
+  $('ins-title').textContent=t;$('ins-steps').innerHTML=st.map(x=>`<li>${x}</li>`).join('');menuShow('inst');};
+$('ins-ok').onclick=()=>{SFX.click();menuShow('home');};
 $('menu-quit').onclick=()=>{SFX.click();menuShow('bye');try{if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});}catch(_){}setTimeout(fit,120);try{if(matchMedia('(display-mode: standalone)').matches)window.close();}catch(_){}};
 $('mn-again').onclick=()=>{SFX.click();menuShow('home');if(matchMedia('(pointer:coarse)').matches)enterPlay();};
 function chooseMode(m){openSetup();draft.mode=m;draft.slots.forEach((x,i)=>x.team=i%2);if(m==='boss'&&draft.slots.length>4)draft.slots.length=4;if(m!=='boss'&&draft.slots.length<2)draft.slots.push({ch:'octo',cpu:true,team:1});menuEl.hidden=true;drawSetup();}
