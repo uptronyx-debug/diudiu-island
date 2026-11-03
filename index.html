@@ -3383,7 +3383,8 @@ function lbClear(){LB.timers.forEach(clearTimeout);LB.timers=[];}
 const MODE_N={ffa:'個人混戰',team:'兩隊對決',boss:'合力打魔王'};
 function lbRooms(v,mock){
   const box=$('lb-rooms');if(!box)return;const now=NETDB?NETDB.now():Date.now();
-  const list=Object.entries(v||{}).map(([code,r])=>({code,...r})).filter(r=>r&&r.c<r.x&&now-(r.t||0)<3*3600e3).sort((a,b)=>(b.t||0)-(a.t||0)).slice(0,20);
+  LB.lobV=v;if(!mock&&!LB.lobTick)LB.lobTick=setInterval(()=>{if(LB.open&&LB.screen==='home')lbRooms(LB.lobV);},10000);
+  const list=Object.entries(v||{}).map(([code,r])=>({code,...r})).filter(r=>r&&r.c>0&&r.c<r.x&&(mock||r.a&&now-r.a<50000)).sort((a,b)=>(b.t||0)-(a.t||0)).slice(0,20);
   if(!list.length){box.innerHTML='<p class="lb-empty">還沒有人開房間，你先開一間吧</p>';return;}
   box.innerHTML=list.map((r,i)=>`<button class="lb-rm" data-code="${escapeHtml(r.code)}"><b>${escapeHtml(r.n||'某人')} 的房間</b><small>${MODE_N[r.m]||''}・${r.map&&MAPS[r.map]?MAPS[r.map].name:'隨機地圖'}</small><i>${r.c}/${r.x}</i><em>加入</em></button>`).join('');
 }
@@ -3684,6 +3685,7 @@ function FireNet(db){
     unsubs.push(db.onConnected(on=>{if(on){markBack();if(host())db.onDiscRemove('lobby/'+code);lobLast='';syncLobby();}}));
     visH=()=>{if(document.hidden)markAway();else markBack();};document.addEventListener('visibilitychange',visH);
     presTimer=setInterval(()=>{if(!meta||!joined)return;const now=db.now();
+      if(host()&&!started&&meta.pub!==false&&!document.hidden&&now-beatT>15000){beatT=now;db.set('lobby/'+code+'/a',now);}
       if(host()&&!started)seats.forEach(x=>{if(!x.cpu&&x.id!==me.id&&x.off&&now-x.off>GRACE_LOBBY)db.remove(P('seats/'+x.id));});
       const hs=seats.find(x=>x.id===meta.host);
       if(!host()&&(!hs||hs.off&&now-hs.off>GRACE_HOST)){const cand=seats.filter(x=>!x.cpu&&!x.off&&x.id!==meta.host)[0];if(cand&&cand.id===me.id){db.set(P('meta/host'),me.id);emit('notice','房主不見了，你變成新房主');}}
@@ -3693,7 +3695,8 @@ function FireNet(db){
   const syncLobby=()=>{if(!code||!meta||!host())return;const L='lobby/'+code;
     if(started||meta.pub===false){if(lobLast!=='x'){lobLast='x';db.remove(L);}return;}
     const mine=seats.find(x=>x.id===me.id),v={h:me.id,n:mine?mine.name:me.name,m:meta.mode,map:meta.map,c:seats.length,x:meta.mode==='boss'?4:8,t:meta.created||db.now()},j=JSON.stringify(v);
-    if(j!==lobLast){lobLast=j;db.set(L,v);}};
+    if(j!==lobLast){lobLast=j;db.set(L,{...v,a:db.now()});}};
+  let beatT=0;
   const pushRoom=()=>{if(!meta)return;syncLobby();emit('room',{now:db.now(),code,host:meta.host,mode:meta.mode,map:meta.map,boss:meta.boss||'random',pub:meta.pub!==false,deadline:meta.deadline-(db.now()-Date.now()),seats:seats.map(s=>({...s}))});};
   const min=()=>meta&&meta.mode==='boss'?1:2;
   async function doStart(force){
