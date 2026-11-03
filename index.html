@@ -2118,7 +2118,8 @@ function build(cx,cy,r){
 
 /* ---- character physics ---- */
 const bodyFree=(x,y)=>{if(isSolid(x,y-2)||isSolid(x,y-14)||isSolid(x,y-26))return false;for(const dy of [10,22])for(const dx of [-5,5])if(isSolid(x+dx,y-dy))return false;return true;};
-const onGround=p=>isSolid(p.x-5,p.y+1)||isSolid(p.x,p.y+1)||isSolid(p.x+5,p.y+1);
+const footOK=(x,y)=>isSolid(x,y)&&isSolid(x,y+3); // a hair-thin leftover sliver can't hold anyone up
+const onGround=p=>footOK(p.x-5,p.y+1)||footOK(p.x,p.y+1)||footOK(p.x+5,p.y+1);
 const grounded=p=>p.vy===0&&p.vx===0&&(onGround(p)||!!p.swim);
 const aimRad=(c,o=0)=>(c.face>0?c.angle+o:180-c.angle-o)*Math.PI/180;
 function spawnY(x){for(let y=30;y<H;y++)if(isSolid(x,y+1)&&bodyFree(x,y))return y;return H*.5;}
@@ -2509,7 +2510,7 @@ function settlePlayers(dt){
       const dy=p.vy*dt,n=Math.max(1,Math.ceil(Math.abs(dy))),s=dy/n;
       for(let i=0;i<n;i++){
         const ny=p.y+s;
-        if(s>0&&(isSolid(p.x-5,ny+1)||isSolid(p.x,ny+1)||isSolid(p.x+5,ny+1))){p.y=Math.floor(ny);p.vy=0;p.vx=0;break;}
+        if(s>0&&(footOK(p.x-5,ny+1)||footOK(p.x,ny+1)||footOK(p.x+5,ny+1))){p.y=Math.floor(ny);p.vy=0;p.vx=0;break;}
         if(s<0&&isSolid(p.x,ny-28)){p.vy=0;break;}
         p.y=ny;
         if(p.y>H+40)break;
@@ -3430,7 +3431,8 @@ function fxEnhance(root){
     b.onclick=e=>{e.stopPropagation();if(fxPop&&fxPop._sel===sel){fxClose();return;}fxClose();
       const pop=document.createElement('div');pop.className='fx-pop';pop.setAttribute('role','listbox');pop._sel=sel;
       [...sel.options].forEach((o,i)=>{const it=document.createElement('button');it.type='button';it.className='fx-opt';it.setAttribute('role','option');it.setAttribute('aria-selected',i===sel.selectedIndex);
-        const ch=CHARS[o.value];if(ch&&o.value!=='boss'){const cv=document.createElement('canvas');cv.width=cv.height=64;const c=cv.getContext('2d');drawChar(c,o.value,30,58,1,rig('idle',0,1,{aim:.5,active:false,power:0}),1.35);it.appendChild(cv);}
+        const ch=CHARS[o.value];if(o.value==='boss'){const cv=document.createElement('canvas');cv.width=cv.height=64;const c=cv.getContext('2d');drawChar(c,'boss',30,60,1,rig('idle',0,1,{aim:.5,active:false,power:0}),.3);it.appendChild(cv);}
+        else if(ch){const cv=document.createElement('canvas');cv.width=cv.height=64;const c=cv.getContext('2d');drawChar(c,o.value,30,58,1,rig('idle',0,1,{aim:.5,active:false,power:0}),1.35);it.appendChild(cv);}
         else if(MAPS[o.value]){const sw=document.createElement('i');sw.className='fx-sw';const M=MAPS[o.value];sw.style.background=`linear-gradient(${M.sky[0]},${M.sky[1]} 55%,${(M.ground&&M.ground[0])||'#e7b56a'} 56%)`;it.appendChild(sw);}
         else if(o.value==='random'){const sw=document.createElement('i');sw.className='fx-sw rnd';sw.textContent='?';it.appendChild(sw);}
         const t=document.createElement('span');t.textContent=o.textContent;it.appendChild(t);
