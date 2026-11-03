@@ -2172,9 +2172,12 @@ function drawBossFig(c,p,x,y,r,s){
 }
 let order=[],turnPos=0,deaths=[],windLines=[],waveFX=0,hitStop=0,flashA=0;
 const SETUP_DEF={mode:'ffa',slots:[{ch:'pine',cpu:false,team:0},{ch:'octo',cpu:true,team:1},{ch:'crab',cpu:true,team:0},{ch:'turtle',cpu:true,team:1}]};
+/* solo setups never carry online-only fields (remote players, seeds, nicknames) */
+function soloClean(st){return{mode:st.mode||'ffa',map:st.map||'random',boss:st.boss||'random',slots:(st.slots||[]).filter(x=>CHARS[x.ch]&&x.ch!=='boss').map(x=>({ch:x.ch,cpu:!!x.cpu,team:x.team||0}))};}
 let setup=(()=>{try{const v=JSON.parse(localStorage.getItem('diudiu-setup')||'null');if(v&&Array.isArray(v.slots)&&v.slots.length>=2&&v.slots.length<=8&&v.slots.every(x=>CHARS[x.ch]))return v;}catch(_){}return JSON.parse(JSON.stringify(SETUP_DEF));})();
 function saveSetup(){try{localStorage.setItem('diudiu-setup',JSON.stringify(setup));}catch(_){}}
 function newGame(){
+  if(!ON){setup=soloClean(setup);if(setup.slots.length<(setup.mode==='boss'?1:2))setup=JSON.parse(JSON.stringify(SETUP_DEF));}
   const boss=setup.mode==='boss',sl=boss?setup.slots.slice(0,4):setup.slots,n=sl.length,team=setup.mode==='team'||boss;
   W=boss?1500+Math.max(0,n-2)*240:n<=2?1300:n<=4?1600:n<=6?1900:2200;
   rng=mulberry32(setup.seed!=null?setup.seed:(Math.random()*1e9)|0);
@@ -3215,7 +3218,7 @@ document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement
 
 /* ---- match setup ---- */
 const setupEl=$('setup');let draft=null;
-function openSetup(){draft=JSON.parse(JSON.stringify(setup));drawSetup();setupEl.hidden=false;}
+function openSetup(){draft=soloClean(setup);drawSetup();setupEl.hidden=false;}
 function drawSetup(){
   const team=draft.mode==='team',bm=draft.mode==='boss';
   if(bm&&draft.slots.length>4)draft.slots.length=4;
