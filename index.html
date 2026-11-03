@@ -958,6 +958,8 @@ ol.road li{border-color:#d9b98a}
   .slot.kid .sl-sw{width:22px;height:22px;font-size:12px!important;top:3px;left:3px}
   .su-slots:not(.split){gap:8px 6px}
 }
+.seat .away{position:absolute;top:28px;left:50%;transform:translateX(-50%) rotate(-6deg);background:#ffd23f;border:2px solid var(--ink);border-radius:8px;font:900 11px var(--font-display);padding:0 6px;z-index:2}
+.seat:has(.away){opacity:.75}
 </style>
 
 <div class="wrap">
@@ -2194,8 +2196,8 @@ function newGame(){
   players.forEach(p=>{const s=sl[p.slot];if(s&&s.name)p.name=s.name;if(s&&s.tag)p.tag=s.tag;p.remote=!!(s&&s.remote);p.uid=s&&s.uid||null;p.lv=s&&DIFF[s.lv]?s.lv:null;});
   players.forEach((p,i)=>{p.alt=players.slice(0,i).some(q=>q.ch===p.ch&&q.team!==p.team);});
   if(boss){const bk=setup.boss&&BOSSES[setup.boss]?setup.boss:BKEYS[Math.floor(rng()*BKEYS.length)];const B=mk(bk,bx,-1,true);Object.assign(B,{boss:true,fixed:true,team:1,cy:bk==='boss'?58:15*BOSS_S,hr:bk==='boss'?74:25*BOSS_S,headCut:bk==='boss'?92:-CHARS[bk].head[1]*BOSS_S*.72,slot:-1,tag:'魔王',color:'#ff5d5d',name:BOSSES[bk].name,kit:[],items:{}});
-    B.hp=B.maxHp=Math.round((140+75*n)*({easy:.7,normal:1,hard:1.3}[diff]||1));players.push(B);}
-  if(boss)order=players.map((_,i)=>i);
+    B.hp=B.maxHp=Math.round((170+85*n)*({easy:.7,normal:1,hard:1.3}[diff]||1));players.push(B);}
+  if(boss){const bi=players.length-1,hs=players.slice(0,bi).map((_,i)=>i),every=hs.length<=2?1:2;order=[];hs.forEach((h,i)=>{order.push(h);if((i+1)%every===0||i===hs.length-1)order.push(bi);});}
   else if(team){const A=players.filter(p=>p.team===0),B=players.filter(p=>p.team===1);order=[];while(A.length||B.length){if(A.length)order.push(players.indexOf(A.shift()));if(B.length)order.push(players.indexOf(B.shift()));}}
   else order=players.map((_,i)=>i);
   turnPos=0;turn=order[0];
@@ -2221,12 +2223,15 @@ const BMOVES={
 };
 const MOVE_N={geyser:'水柱',rain:'天降小弟',slam:'近身重擊',snipe:'瞄準砸',quake:'大地震',charge:'衝過去',heal:'回血',ink:'墨汁噴臉',bounce:'彈飛',steal:'偷道具',warp:'瞬移',zap:'電麻',bite:'大咬一口'};
 const MOVE_LINE={geyser:'噴你一臉水柱！',rain:'小弟們，上！',slam:'站太近的通通給我飛！',snipe:'看招！就是你！',quake:'大家一起抖起來～',charge:'讓開讓開我要過去啦！',heal:'休息一下回個血～',ink:'噗！什麼都看不到了吧',bounce:'彈～飛～',steal:'你的東西現在是我的了',warp:'咻～你找不到我',zap:'劈哩啪啦！全身麻麻',bite:'啊嗚——咬一口！'};
-const BDMG={geyser:20,rain:12,slam:16,snipe:18,quake:9,charge:16,ink:8,bounce:10,zap:8,bite:24};
+const BDMG={geyser:28,rain:17,slam:24,snipe:26,quake:13,charge:24,ink:12,bounce:15,zap:12,bite:34};const BMUL=0.65;
 function bossFoes(c){return players.filter(p=>p.alive&&foeOf(c,p));}
 function nearestOf(c,list){return list.slice().sort((a,b)=>Math.abs(a.x-c.x)-Math.abs(b.x-c.x))[0];}
 function markAt(x,r,wide){x=Math.max(20,Math.min(W-20,x));return{x,r,wide,y:Math.min(surfaceY(Math.max(0,Math.min(W-1,Math.round(x)))),water)};}
 function bossPlan(c){
   const foes=bossFoes(c);if(!foes.length)return null;
+  const near0=nearestOf(c,foes);
+  let wTo=c.x;if(rng()<.75){const dir=Math.sign(near0.x-c.x)||1,step=Math.min(Math.abs(near0.x-c.x)-150,140+rng()*120);if(step>20)wTo=Math.max(200,Math.min(W-200,c.x+dir*step));}
+  const wFrom=c.x;c.x=wTo; // plan from where the boss will stand
   const set=BMOVES[c.ch]||BMOVES.boss,near=nearestOf(c,foes),dn=Math.abs(near.x-c.x);
   // pick: close foes → close move if it has one; hurt → heal; otherwise random
   let atk=set[Math.floor(rng()*set.length)];
@@ -2243,6 +2248,7 @@ function bossPlan(c){
   else if(atk==='quake')marks=foes.map(p=>markAt(p.x,36));
   else if(atk==='charge'){const dir=Math.sign(near.x-c.x)||1,to=Math.max(200,Math.min(W-200,c.x+dir*Math.min(dn-90,320)));plan.to=to;marks=[markAt(to,150,true)];}
   else if(atk==='warp'){const to=Math.max(240,Math.min(W-240,W/2+(rng()<.5?-1:1)*(120+rng()*260)));plan.to=to;marks=[markAt(to,90,true)];}
+  c.x=wFrom;plan.wFrom=wFrom;plan.wTo=wTo;plan.wt=0;
   bossMarks=marks;c.face=Math.sign(tg.x-c.x)||c.face||-1;
   const line=(BOSSES[c.ch]&&BOSSES[c.ch].line&&BOSSES[c.ch].line[{geyser:'geyser',rain:'cannon',slam:'tail'}[atk]])||MOVE_LINE[atk];
   banner={text:c.name+'：'+MOVE_N[atk],sub:line,t:1.6};SFX.roar();setAnim(c,'throw');if(!reduce)shake=Math.max(shake,6);
@@ -2251,8 +2257,10 @@ function bossPlan(c){
 function bossHit(c,q,dmg,kx,ky){if(!q.alive)return;hurt(q,dmg,{shooter:c});if(kx!=null&&!gmFor('god',q)){q.vx=kx;q.vy=ky;}}
 function dust(x,n,col){for(let i=0;i<n;i++)parts.push({x:x+(Math.random()-.5)*60,y:surfaceY(Math.max(0,Math.min(W-1,Math.round(x))))-4,vx:(Math.random()-.5)*200,vy:-90-Math.random()*160,t:.7,c:col||'#c98a45',r:3});}
 function bossUpdate(dt){
-  if(!cpu||!cpu.boss)return;cpu.t-=dt;if(cpu.t>0)return;
-  const c=players[turn],a=cpu.atk,foes=bossFoes(c),D=BDMG[a]||12;shotNo++;shotsLeft--;lastHit=false;
+  if(!cpu||!cpu.boss)return;cpu.t-=dt;
+  if(cpu.wTo!=null&&cpu.wt<1){const c0=players[turn];cpu.wt=Math.min(1,cpu.wt+dt/1.0);const e=cpu.wt<.5?2*cpu.wt*cpu.wt:1-Math.pow(-2*cpu.wt+2,2)/2;c0.x=cpu.wFrom+(cpu.wTo-cpu.wFrom)*e;c0.y=Math.min(surfaceY(Math.round(c0.x)),water-4);c0.walkT=.12;if(Math.random()<.08)dust(c0.x,1);}
+  if(cpu.t>0)return;
+  const c=players[turn],a=cpu.atk,foes=bossFoes(c),D=Math.round((BDMG[a]||12)*BMUL*({easy:.7,normal:1,hard:1.25}[diff]||1));shotNo++;shotsLeft--;lastHit=false;
   phase='settle';settleT=1.3;
   if(a==='rain'){bossMarks.forEach(mk2=>projs.push({x:mk2.x+(rng()-.5)*30,y:-90-rng()*140,vx:(rng()-.5)*20,vy:60,w:{...CANNON,dmg:D},shooter:c,age:1,trail:[]}));tone(300,.4,{type:'square',to:120,vol:.1});phase='flying';}
   else if(a==='geyser'){const mk2=bossMarks[0];for(let i=0;i<40;i++)parts.push({x:mk2.x+(Math.random()-.5)*30,y:mk2.y,vx:(Math.random()-.5)*90,vy:-300-Math.random()*380,t:.9,c:i%3?'#7fd3ff':'#fff',r:3+Math.random()*3});
@@ -2291,6 +2299,7 @@ function drawBoss(p,isTurn){
 function startTurn(){
   const c=players[turn];
   turnCount++;if(ON)rng=mulberry32((ON.seed^Math.imul(turnCount,2654435761))>>>0);
+  if(ON&&ON.isHost&&c&&c.uid&&c.uid!==ON.me&&c.remote&&seatAway(c.uid))setTimeout(()=>{if(ON&&players[turn]===c)netTakeover(c);},50);
   let note='';
   if(turnCount>=SD_TURN&&!gm('sd')){water-=10;note='海水又漲了～快往高處跑';waveFX=1.6;SFX.splash();texts.push({x:cam.x,y:water-60,t:2,t0:2,s:'海水漲上來啦～',c:'#fff',big:true,stroke:'#2a8aa6'});}
   wind=Math.round((rng()*2-1)*10);
@@ -2311,7 +2320,7 @@ function startTurn(){
   if(!(c.ammo[sel]>0)&&!gmFor('ammo',c))sel='coco';
   banner={text:c.name+' 的回合',sub:c.inkNow?'被墨汁噴到，什麼都看不清楚！':c.para?'全身麻麻，這回合不能走':note||TAUNT[Math.floor(Math.random()*TAUNT.length)],t:1.4};SFX.turn();
   cpu=c.cpu?{stage:'think',t:1.0}:null;
-  if(c.boss){shotsLeft=c.hp<c.maxHp/2&&diff==='hard'?2:1;cpu=bossPlan(c);}
+  if(c.boss){shotsLeft=diff!=='easy'&&c.hp<c.maxHp/2?2:1;cpu=bossPlan(c);}
   renderDeck();
 }
 
@@ -2626,6 +2635,7 @@ function cpuUpdate(dt){
 /* ---- loop ---- */
 let last=performance.now();
 function frame(now){
+  if(window.__pause){last=now;requestAnimationFrame(frame);return;}
   const dt=Math.min(.05,(now-last)/1000);last=now;
   let k=1;if(hitStop>0){hitStop-=dt;k=.05;}
   if(ON||(menuEl.hidden&&sysEl.hidden&&setupEl.hidden))update(dt*k);if(k<1)shake*=1.02;draw();try{drawMenu(now);}catch(_){}try{drawRoster(now);}catch(_){}try{drawLobby(now);}catch(_){}requestAnimationFrame(frame);
@@ -2634,7 +2644,7 @@ function update(dt){
   updIntro(dt);updPick(dt);
   for(const c of clouds){c.x+=(wind*3+4)*dt*c.s;if(c.x>W+120)c.x=-120;if(c.x<-120)c.x=W+120;}
   if(banner){banner.t-=dt;if(banner.t<=0)banner=null;}
-  netPump();
+  netPump();if(ON){ON.ck=(ON.ck||0)-dt;if(ON.ck<=0){ON.ck=1;netCheck();}}
   const c=players[turn];
   if(phase==='aim'){
     const own=isOwn(c);
@@ -2644,7 +2654,7 @@ function update(dt){
     if(own&&timeLeft<=0){if(charging)fire();else skipTurn();}
     else if(c.boss)bossUpdate(dt);
     else if(!own)netRemote(c,dt);
-    else if(c.cpu){if(grounded(c))cpuUpdate(dt);}
+    else if(c.cpu||ON&&own&&c.uid&&c.uid!==ON.me){if(!cpu)cpu={stage:'think',t:.6};if(grounded(c))cpuUpdate(dt);}
     else{
       if(!charging&&grounded(c)){
         const mv=(input.right?1:0)-(input.left?1:0);
@@ -3446,7 +3456,7 @@ function lbRoom(){
       const bub=LB.bubbles[s.id]&&performance.now()-LB.bubbles[s.id].t<2600?`<i class="bubble">${EMOTES[LB.bubbles[s.id].e]}</i>`:'';
       d.innerHTML=`${bub}<canvas class="spf" width="120" height="120" data-ch="${s.ch}" data-id="${s.id}" data-alt="${dup?1:0}"></canvas>
         <b class="sn">${s.id===r.host?'<span class="crown">房主</span>':''}${escapeHtml(s.name)}</b>
-        <span class="kind ${s.cpu||s.bot?'k-c':'k-p'}">${s.cpu||s.bot?'電腦':'玩家'}</span>
+        <span class="kind ${s.cpu||s.bot?'k-c':'k-p'}">${s.cpu||s.bot?'電腦':'玩家'}</span>${s.off?'<span class="away">暫離</span>':''}
         ${host&&s.cpu?`<select class="cpu-ch" data-id="${s.id}" aria-label="${escapeHtml(s.name)} 的角色">${CKEYS.map(k=>`<option value="${k}" ${k===s.ch?'selected':''}>${CHARS[k].name}</option>`).join('')}</select>`:`<small>${CHARS[s.ch].name}${dup?'（異色）':''}${s.cpu?'・'+({easy:'很廢',normal:'普通',hard:'很兇'}[s.lv||'normal']):''}</small>`}
         ${host&&s.cpu?`<span class="lvs">${['easy','normal','hard'].map(l=>`<button data-a="lv" data-id="${s.id}" data-lv="${l}" aria-pressed="${(s.lv||'normal')===l}">${{easy:'很廢',normal:'普通',hard:'很兇'}[l]}</button>`).join('')}</span>`:''}
         <span class="st ${s.ready?'ok':''}">${s.ready?'準備好了':'選角中⋯'}</span>
@@ -3631,11 +3641,12 @@ async function FireDB(cfg){
     get:async p=>(await D.get(R(p))).val(),
     set:(p,v)=>D.set(R(p),jclean(v)),update:(p,o)=>D.update(R(p),jclean(o)),remove:p=>D.remove(R(p)),push:(p,v)=>D.push(R(p),jclean(v)),
     onValue:(p,cb)=>D.onValue(R(p),s=>cb(s.val())),onChild:(p,cb)=>D.onChildAdded(R(p),s=>cb(s.key,s.val())),
-    onDiscRemove:p=>D.onDisconnect(R(p)).remove(),cancelDisc:p=>D.onDisconnect(R(p)).cancel(),now:()=>Date.now()+off};
+    onDiscRemove:p=>D.onDisconnect(R(p)).remove(),cancelDisc:p=>D.onDisconnect(R(p)).cancel(),now:()=>Date.now()+off,
+    onDiscStamp:p=>D.onDisconnect(R(p)).set(D.serverTimestamp()),onConnected:cb=>D.onValue(R('.info/connected'),s=>cb(!!s.val()))};
 }
 /* same API over BroadcastChannel — lets two local tabs play each other for testing (?net=local) */
 function LocalDB(){
-  const ch=new BroadcastChannel('diudiu-localdb'),uid='u'+rid()+rid();let tree={},synced=false,pc=0;const subs=[],disc=new Set();
+  const ch=new BroadcastChannel('diudiu-localdb'),uid='u'+rid()+rid();let tree={},synced=false,pc=0;const subs=[],disc=new Set(),stamps=new Set();
   const segs=p=>p.split('/').filter(Boolean);
   const getAt=p=>{let n=tree;for(const s of segs(p)){if(n==null||typeof n!=='object')return null;n=n[s];}return n===undefined?null:n;};
   const setAt=(p,v)=>{const ss=segs(p);let n=tree;for(let i=0;i<ss.length-1;i++){if(n[ss[i]]==null||typeof n[ss[i]]!=='object')n[ss[i]]={};n=n[ss[i]];}if(v==null)delete n[ss[ss.length-1]];else n[ss[ss.length-1]]=jclean(v);};
@@ -3644,13 +3655,14 @@ function LocalDB(){
   const apply=op=>{if(op.t==='set')setAt(op.p,op.v);else if(op.t==='upd')for(const k in op.v)setAt(op.p+'/'+k,op.v[k]);fire();};
   const send=op=>{ch.postMessage(op);apply(op);return Promise.resolve();};
   ch.onmessage=e=>{const m=e.data;if(m.t==='hello'){ch.postMessage({t:'tree',v:tree,to:m.from});return;}if(m.t==='tree'){if(m.to===uid&&!synced){synced=true;tree=m.v||{};fire();}return;}apply(m);};
-  ch.postMessage({t:'hello',from:uid});addEventListener('pagehide',()=>disc.forEach(p=>ch.postMessage({t:'set',p,v:null})));
+  ch.postMessage({t:'hello',from:uid});addEventListener('pagehide',()=>{disc.forEach(p=>ch.postMessage({t:'set',p,v:null}));stamps.forEach(p=>ch.postMessage({t:'set',p,v:Date.now()}));});
   return{kind:'local',uid,get:async p=>{await new Promise(r=>setTimeout(r,120));return jclean(getAt(p));},
     set:(p,v)=>send({t:'set',p,v:jclean(v)}),update:(p,o)=>send({t:'upd',p,v:jclean(o)}),remove:p=>send({t:'set',p,v:null}),
     push:(p,v)=>send({t:'set',p:p+'/'+Date.now().toString(36).padStart(9,'0')+(pc++).toString(36).padStart(4,'0')+uid.slice(-4),v:jclean(v)}),
     onValue:(p,cb)=>{const s={p,cb,type:'v',last:undefined};subs.push(s);setTimeout(()=>{if(s.last===undefined){const v=getAt(p);s.last=JSON.stringify(v);cb(jclean(v));}},0);return()=>{const i=subs.indexOf(s);if(i>=0)subs.splice(i,1);};},
     onChild:(p,cb)=>{const s={p,cb,type:'c',known:new Set()};subs.push(s);setTimeout(fire,0);return()=>{const i=subs.indexOf(s);if(i>=0)subs.splice(i,1);};},
-    onDiscRemove:p=>{disc.add(p);return Promise.resolve();},cancelDisc:p=>{disc.delete(p);return Promise.resolve();},now:()=>Date.now()};
+    onDiscRemove:p=>{disc.add(p);return Promise.resolve();},cancelDisc:p=>{disc.delete(p);stamps.delete(p);return Promise.resolve();},now:()=>Date.now(),
+    onDiscStamp:p=>{stamps.add(p);return Promise.resolve();},onConnected:cb=>{setTimeout(()=>cb(true),0);return()=>{};}};
 }
 function netInit(){
   if(NETDB)return Promise.resolve(NETDB);
@@ -3664,12 +3676,25 @@ function FireNet(db){
   const h={},emit=(t,d)=>(h[t]||[]).forEach(f=>f(d));let code=null,me=null,meta=null,seats=[],unsubs=[],started=false,joined=false,dlTimer=null,t0=0,startBusy=false;
   const P=s=>'rooms/'+code+(s?'/'+s:'');
   const host=()=>meta&&meta.host===me.id;
+  const GRACE_LOBBY=60000,GRACE_HOST=20000;
+  let presTimer=null,visH=null;
+  const markBack=()=>{if(!code||!joined)return;db.set(P('seats/'+me.id+'/off'),null);db.onDiscStamp(P('seats/'+me.id+'/off'));};
+  const markAway=()=>{if(!code||!joined)return;db.set(P('seats/'+me.id+'/off'),db.now());};
+  function presence(){
+    unsubs.push(db.onConnected(on=>{if(on){markBack();if(host())db.onDiscRemove('lobby/'+code);lobLast='';syncLobby();}}));
+    visH=()=>{if(document.hidden)markAway();else markBack();};document.addEventListener('visibilitychange',visH);
+    presTimer=setInterval(()=>{if(!meta||!joined)return;const now=db.now();
+      if(host()&&!started)seats.forEach(x=>{if(!x.cpu&&x.id!==me.id&&x.off&&now-x.off>GRACE_LOBBY)db.remove(P('seats/'+x.id));});
+      const hs=seats.find(x=>x.id===meta.host);
+      if(!host()&&(!hs||hs.off&&now-hs.off>GRACE_HOST)){const cand=seats.filter(x=>!x.cpu&&!x.off&&x.id!==meta.host)[0];if(cand&&cand.id===me.id){db.set(P('meta/host'),me.id);emit('notice','房主不見了，你變成新房主');}}
+    },4000);
+  }
   let lobLast='';
   const syncLobby=()=>{if(!code||!meta||!host())return;const L='lobby/'+code;
     if(started||meta.pub===false){if(lobLast!=='x'){lobLast='x';db.remove(L);}return;}
     const mine=seats.find(x=>x.id===me.id),v={h:me.id,n:mine?mine.name:me.name,m:meta.mode,map:meta.map,c:seats.length,x:meta.mode==='boss'?4:8,t:meta.created||db.now()},j=JSON.stringify(v);
     if(j!==lobLast){lobLast=j;db.set(L,v);}};
-  const pushRoom=()=>{if(!meta)return;syncLobby();emit('room',{code,host:meta.host,mode:meta.mode,map:meta.map,boss:meta.boss||'random',pub:meta.pub!==false,deadline:meta.deadline-(db.now()-Date.now()),seats:seats.map(s=>({...s}))});};
+  const pushRoom=()=>{if(!meta)return;syncLobby();emit('room',{now:db.now(),code,host:meta.host,mode:meta.mode,map:meta.map,boss:meta.boss||'random',pub:meta.pub!==false,deadline:meta.deadline-(db.now()-Date.now()),seats:seats.map(s=>({...s}))});};
   const min=()=>meta&&meta.mode==='boss'?1:2;
   async function doStart(force){
     if(!host()||started||startBusy)return;startBusy=true;
@@ -3706,7 +3731,7 @@ function FireNet(db){
       for(let i=0;i<8;i++){code=rcode();if(!(await db.get(P('meta'))))break;}
       const now=db.now();
       await db.set(P(),{meta:{host:me.id,mode:'ffa',map:'random',deadline:now+PICK_SEC*1000,created:now},seats:{[me.id]:{name:me.name,ch:me.ch,team:0,ready:false,j:now}}});
-      db.onDiscRemove(P());db.onDiscRemove('lobby/'+code);joined=true;watch();
+      db.onDiscRemove('lobby/'+code);joined=true;watch();presence();
     },
     async join(c,m){me=m;code=c;
       const mt=await db.get(P('meta'));
@@ -3715,7 +3740,7 @@ function FireNet(db){
       const ss=await db.get(P('seats'))||{},n=Object.keys(ss).length;
       if(n>=(mt.mode==='boss'?4:8)){emit('notice','房間滿了');emit('closed');return;}
       await db.set(P('seats/'+me.id),{name:me.name,ch:me.ch,team:n%2,ready:false,j:db.now()});
-      db.onDiscRemove(P('seats/'+me.id));joined=true;watch();
+      joined=true;watch();presence();
     },
     send(t,d){
       if(!code)return;const amHost=host();
@@ -3736,7 +3761,8 @@ function FireNet(db){
     async backToRoom(){ // after a match: host clears the old game, everyone un-readies
       if(host()){const now=db.now(),up={};seats.forEach(s=>{if(!s.cpu)up[s.id+'/ready']=false;});await db.update(P('seats'),up);await db.set(P('meta/deadline'),now+PICK_SEC*1000);await db.remove(P('game'));await db.remove(P('start'));}
     },
-    leave(){unsubs.forEach(u=>{try{u();}catch(_){}});unsubs=[];clearTimeout(dlTimer);
+    leave(){unsubs.forEach(u=>{try{u();}catch(_){}});unsubs=[];clearTimeout(dlTimer);clearInterval(presTimer);if(visH)document.removeEventListener('visibilitychange',visH);
+      if(code&&joined)db.cancelDisc(P('seats/'+me.id+'/off'));
       if(code&&joined){if(host()){db.remove(P());db.remove('lobby/'+code);}else{db.remove(P('seats/'+me.id));db.cancelDisc(P('seats/'+me.id));}}joined=false;code=null;},
     path:s=>P(s),get code(){return code;}
   };
@@ -3749,32 +3775,57 @@ function FireNet(db){
 let ON=null,NETMUTE=0;
 function netGameStart(net,isHost,seed){
   const db=net.db;
-  ON={db,net,me:db.uid,isHost,seed,rc:0,ends:{},q:[],pose:null,pt:0,carveLog:[],waitKit:false,unsubs:[],noLog:false,over:false};
+  ON={db,net,me:db.uid,isHost,hostUid:LB.room?LB.room.host:null,seed,rc:0,ends:{},q:[],pose:null,pt:0,carveLog:[],waitKit:false,unsubs:[],noLog:false,over:false,tk:{},seats:{},hid:0};
+  if(LB.room)LB.room.seats.forEach(x=>ON.seats[x.id]=x);
+  ON.unsubs.push(db.onValue(net.path('game/tk'),v=>{if(ON)ON.tk=v||{};}));
   ON.unsubs.push(db.onChild(net.path('game/ev'),(k,e)=>{if(!ON||!e||e.by===ON.me)return;if(e.k==='end')ON.ends[e.rc]=e;else if(e.k==='kit')netKit(e);else ON.q.push(e);}));
   ON.unsubs.push(db.onValue(net.path('game/pose'),v=>{if(ON&&v&&v.by!==ON.me)ON.pose=v;}));
 }
 function netStop(){if(!ON)return;ON.unsubs.forEach(u=>{try{u();}catch(_){}});ON=null;NETMUTE=0;}
 function netSend(e){if(!ON)return;e.by=ON.me;ON.db.push(ON.net.path('game/ev'),e);}
-function isOwn(c){if(!ON||!c)return true;if(!c.cpu)return true;if(c.remote)return false;return ON.isHost;}
+function ownerUid(c){ // who drives this player's current turn
+  if(!ON||!c)return null;const taken=c.uid&&ON.tk[c.uid]===turnCount;
+  if(!c.cpu)return taken?ON.hostUid:ON.me;
+  if(c.remote)return taken?ON.hostUid:c.uid;
+  return ON.hostUid;}
+function isOwn(c){if(!ON||!c)return true;return ownerUid(c)===ON.me;}
+const NET_AWAY=6000;
+function seatAway(uid){if(!ON||!uid||!Object.keys(ON.seats).length)return false;const st=ON.seats[uid];if(!st)return true;return !!(st.off&&ON.db.now()-st.off>NET_AWAY);}
+function netTakeover(c,why){ // host plays an absent player's turn with the CPU brain
+  if(!ON||!ON.isHost||!c||!c.uid||c.uid===ON.me||ON.tk[c.uid]===turnCount)return;
+  ON.tk[c.uid]=turnCount;ON.db.set(ON.net.path('game/tk/'+c.uid),turnCount);
+  if(phase==='aim'){cpu={stage:'think',t:.6};if(timeLeft<8)timeLeft=8;}
+  toast(`<b>${escapeHtml(c.name)}</b> ${why||'暫時離開'}，電腦先幫打`,2200);}
 const poseOf=c=>({x:+c.x.toFixed(2),y:+c.y.toFixed(2),f:c.face,a:+c.angle.toFixed(2)});
-function netKit(e){if(!players)return;const p=players.find(q=>q.uid===e.uid);if(p&&!p.kit)setKit(p,e.kit);if(ON&&ON.waitKit){ON.waitKit=false;nextPick();}}
+function netKit(e){if(!players)return;const p=players.find(q=>q.uid===e.uid);if(p&&p.uid===ON.me&&picking===p){setKit(p,e.kit);pickEl.hidden=true;picking=null;nextPick();return;}if(p&&!p.kit)setKit(p,e.kit);if(ON&&ON.waitKit){ON.waitKit=false;nextPick();}}
 function netPose(c,dt){
   ON.pt-=dt;if(ON.pt>0)return;ON.pt=.1;
   ON.db.set(ON.net.path('game/pose'),{by:ON.me,tc:turnCount,x:+c.x.toFixed(1),y:+c.y.toFixed(1),f:c.face,a:+c.angle.toFixed(1),pw:+power.toFixed(1),ch:charging?1:0,tl:+timeLeft.toFixed(1),st:Math.round(c.stamina),sel,wk:c.walkT>0?1:0});
 }
 function netRemote(c,dt){
-  const q=ON.pose;if(!q||q.tc!==turnCount)return;
+  const q=ON.pose;if(!q||q.tc!==turnCount||q.by!==ownerUid(c))return;
   const k=Math.min(1,dt*12),dx=q.x-c.x;
   if(Math.abs(dx)>60||Math.abs(q.y-c.y)>60){c.x=q.x;c.y=q.y;}else{c.x+=dx*k;c.y+=(q.y-c.y)*k;}
   if(q.wk)c.walkT=.12;c.face=q.f;c.angle=q.a;power=q.pw;charging=!!q.ch;timeLeft=q.tl;c.stamina=q.st;if(q.sel&&WEAPONS[q.sel])sel=q.sel;c.vx=0;if(c.vy>0&&grounded(c))c.vy=0;
 }
+function netCatchUp(){ // came back from the background: jump straight to the newest finished turn
+  const ks=Object.keys(ON.ends).map(Number).filter(k=>k>=ON.rc).sort((a,b)=>a-b);const fresh=ON.hid&&performance.now()-ON.hid<4000;if(ks.length<2&&!(ks.length===1&&fresh))return false;
+  if(!ks.length)return false;
+  const last=ks[ks.length-1];ON.noLog=true;ks.forEach(k=>{const e=ON.ends[k];(e.s.cv||[]).forEach(a=>_carve(a[0],a[1],a[2],false));});ON.noLog=false;
+  const sn=ON.ends[last].s;ks.forEach(k=>delete ON.ends[k]);ON.rc=last+1;ON.hid=0;
+  (sn.p||[]).forEach((o,i)=>{const p=players[i];if(!p||!o)return;Object.assign(p,o);p.vx=0;p.vy=0;});if(sn.water!=null)water=sn.water;
+  if(sn.tp!=null){turnPos=sn.tp;turn=order[turnPos];}if(sn.tc!=null)turnCount=sn.tc;shotsLeft=sn.sl||0;
+  projs=[];charging=false;cpu=null;bossMarks=[];ON.carveLog=[];ON.q=ON.q.filter(e=>e.tc>turnCount);pickEl.hidden=true;picking=null;intro=null;
+  noteDeaths();afterResolve();return true;}
 function netPump(){
   if(!ON)return;
+  if(phase!=='over'&&phase!=='pick'&&netCatchUp())return;
   while(ON.q.length){
     const e=ON.q[0];
     if(e.tc<turnCount){ON.q.shift();continue;}
     if(e.tc>turnCount||phase!=='aim')return;
-    const c=players[turn];if(isOwn(c))return; // we took over (dropout) — ignore their leftovers
+    const c=players[turn];if(isOwn(c)){ON.q.shift();continue;}
+    if(e.by!==ownerUid(c)){ON.q.shift();continue;} // stale events from someone who no longer drives this turn
     ON.q.shift();
     if(e.x!=null){c.x=e.x;c.y=e.y;c.face=e.f;c.angle=e.a;}
     NETMUTE++;
@@ -3788,7 +3839,7 @@ function netPump(){
   }
 }
 const SNAPK=['x','y','hp','alive','frozen','inked','paraNext','shield','revealed','swim','rescued','shellType','shellOn','spikeOn','items','ammo','misses','face','safeX','safeY'];
-function netSnap(){return{p:players.map(p=>{const o={};SNAPK.forEach(k=>{if(p[k]!==undefined&&p[k]!==null)o[k]=typeof p[k]==='number'?+p[k].toFixed(2):p[k];});return o;}),water,cv:ON.carveLog.slice(-600)};}
+function netSnap(){return{p:players.map(p=>{const o={};SNAPK.forEach(k=>{if(p[k]!==undefined&&p[k]!==null)o[k]=typeof p[k]==='number'?+p[k].toFixed(2):p[k];});return o;}),water,cv:ON.carveLog.slice(-600),tp:turnPos,tc:turnCount,sl:shotsLeft};}
 function netApply(s){
   if(!s)return;ON.noLog=true;
   (s.cv||[]).forEach(a=>_carve(a[0],a[1],a[2],false));
@@ -3803,9 +3854,19 @@ function resolveGate(){
   const e=ON.ends[ON.rc];if(!e)return;
   delete ON.ends[ON.rc];ON.rc++;netApply(e.s);ON.carveLog=[];afterResolve();
 }
-function netSeats(r){ // someone left mid-match → a CPU (run by the host) takes the seat
+function ownerUidSafe(c){try{return ownerUid(c);}catch(_){return null;}}
+function netSeats(r){ // presence changes mid-match
   if(!ON||!players)return;
-  players.forEach(p=>{if(p.remote&&!r.seats.some(s=>s.id===p.uid)){p.remote=false;p.tag='電腦';toast(`<b>${escapeHtml(p.name)}</b> 斷線了，電腦接手`,2400);
+  ON.now=r.now;ON.seats={};r.seats.forEach(x=>ON.seats[x.id]=x);
+  if(r.host&&r.host!==ON.hostUid){ON.hostUid=r.host;ON.isHost=r.host===ON.me;if(ON.isHost)toast('房主斷線了，換你當房主',2200);}
+  netCheck();
+}
+function netCheck(){
+  if(!ON||!players)return;
+  players.forEach(p=>{if(!p.uid||p.uid===ON.me||!p.remote)return;const aw=seatAway(p.uid);if(aw!==!!p.awayTag){p.awayTag=aw;p.tag=aw?'暫離':'玩家';if(!aw)toast(`<b>${escapeHtml(p.name)}</b> 回來了`,1800);}});
+  if(ON.isHost){const c=players[turn];if(c&&phase==='aim'&&c.uid&&c.uid!==ON.me&&seatAway(c.uid))netTakeover(c);
+    if(ON.waitKit)players.forEach(p=>{if(p.remote&&!p.kit&&seatAway(p.uid)){const k=['heal','power','shield'];setKit(p,k);netSend({k:'kit',uid:p.uid,kit:k});ON.waitKit=false;nextPick();}});}
+  if(Object.keys(ON.seats).length)players.forEach(p=>{if(p.remote&&!ON.seats[p.uid]){p.remote=false;p.tag='電腦';toast(`<b>${escapeHtml(p.name)}</b> 斷線了，電腦接手`,2400);
     if(!p.kit){setKit(p,['heal','power','shield']);if(ON.waitKit){ON.waitKit=false;nextPick();}}buildHud();}});
 }
 function netHostGone(){
@@ -3814,6 +3875,7 @@ function netHostGone(){
 }
 function netOverBtns(){const on=!!(ON||LB.inMatch);$('again').textContent=on?'回房間':'再來一局';$('over-setup').textContent=on?'離開房間':'改設定';}
 /* action wrappers: owner broadcasts, spectators can't act */
+document.addEventListener('visibilitychange',()=>{if(ON&&!document.hidden)ON.hid=performance.now();});
 const _doJump=doJump,_doDig=doDig,_useItem=useItem,_fire=fire,_skipTurn=skipTurn,_carve=carve;
 function netWrap(name,orig){return function(...a){
   if(!ON||NETMUTE)return orig.apply(this,a);
@@ -3824,7 +3886,7 @@ function netWrap(name,orig){return function(...a){
   let r;NETMUTE++;try{r=orig.apply(this,a);}finally{NETMUTE--;}
   if(name!=='item'||r)netSend(ev);
   return r;};}
-if(new URLSearchParams(location.search).get('net')==='local')window.__dd=()=>({tc:turnCount,phase,turn,rc:ON&&ON.rc,q:ON&&ON.q.length,p:players.map(p=>[p.name,Math.round(p.x),Math.round(p.y),p.hp,p.alive,p.kit&&p.kit.join()])});
+if(new URLSearchParams(location.search).get('net')==='local')window.__dd=()=>({tc:turnCount,phase,turn,rc:ON&&ON.rc,q:ON&&ON.q.length,tk:ON&&JSON.stringify(ON.tk),p:players.map(p=>[p.name,Math.round(p.x),Math.round(p.y),p.hp,p.alive,p.tag])});
 doJump=netWrap('jump',_doJump);doDig=netWrap('dig',_doDig);useItem=netWrap('item',_useItem);fire=netWrap('fire',_fire);skipTurn=netWrap('skip',_skipTurn);
 carve=function(cx,cy,r,rim){if(ON&&!ON.noLog)ON.carveLog.push([+cx.toFixed(1),+cy.toFixed(1),+r.toFixed(1)]);return _carve(cx,cy,r,rim);};
 
