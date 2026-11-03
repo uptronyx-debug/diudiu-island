@@ -672,6 +672,9 @@ ol.road li{border-color:#d9b98a}
 .pick-tip{min-height:2.8em}.pick-tip small{color:var(--ink2)}
 @media (max-width:520px){.pk{width:30%!important}}
 .lb-mock.ok{color:#2f7a2a!important}
+.lb-reset{border:2px solid #fff6e0;background:#fff6e0;color:#5e3b18;font:800 12px var(--font-display);border-radius:999px;padding:2px 10px;cursor:pointer;margin-left:2px}
+.lb-reset:active{transform:translateY(1px)}
+.lb-timer b{min-width:2.4em!important}
 </style>
 
 <div class="wrap">
@@ -916,7 +919,7 @@ ol.road li{border-color:#d9b98a}
   <div class="lb-room" id="lb-room" hidden>
     <div class="lb-top">
       <div class="lb-codebox"><small>房號</small><b id="lb-code"></b><button class="ghost2" id="lb-copy">複製</button></div>
-      <div class="lb-timer" id="lb-timer"><small>選角倒數</small><b id="lb-sec">60</b></div>
+      <div class="lb-timer" id="lb-timer"><small>等朋友倒數</small><b id="lb-sec">5:00</b><button class="lb-reset" id="lb-reset" title="重新倒數 5 分鐘">重新倒數</button></div>
       <button class="ghost2" id="lb-leave">離開房間</button>
     </div>
     <div class="lb-set">
@@ -2800,7 +2803,7 @@ $('dev-relock').onclick=()=>{devOpen=false;try{sessionStorage.removeItem('diudiu
 devRender();
 /* ---- online lobby (transport-agnostic; MockNet stands in for friends until a real connection is wired) ---- */
 const LB={open:false,screen:'home',me:null,room:null,net:null,timers:[],bubbles:{},anim:{},lastSec:-1};
-const PICK_SEC=60,COUNT_SEC=5;
+const PICK_SEC=300,COUNT_SEC=5;
 const FUNNY=['椰子王','芭樂人','丟包仔','北七王','砸雞哥','頭好撞撞','滑倒仔','海灘褲','鳳梨酥','香蕉皮','落海王','手殘黨',
   '丟不準','準到哭','炸魚仔','愛哭鬼','包子臉','阿砸','歐北丟','空氣砲','神射手(自稱)','丟三落四','沒在怕','嚕嚕米',
   '海龜湯','章魚燒','烤魷魚','珍奶狂','大雞排','臭豆腐','鹹酥雞','雞蛋糕','番茄炒蛋','米血糕','滷肉飯','蚵仔煎',
@@ -2829,7 +2832,7 @@ function MockNet(){
     later(6000+Math.random()*14000,()=>{const s=room&&room.seats.find(x=>x.id===b.id);if(!s)return;s.ready=true;push();});
     const chat=()=>later(3500+Math.random()*6000,()=>{if(!room||started||!room.seats.some(x=>x.id===b.id))return;emit('emote',{id:b.id,e:EKEYS[Math.floor(Math.random()*EKEYS.length)]});chat();});chat();};
   const deadline=()=>{room.deadline=Date.now()+PICK_SEC*1000;
-    later(PICK_SEC*1000,()=>{if(!room||started)return;
+    later(PICK_SEC*1000,()=>{if(!room||started||Date.now()<room.deadline-100)return;
       if(room.seats.length<(room.mode==='boss'?1:2)){room.seats.push({id:'cpu'+rid(),name:'電腦1',ch:CKEYS[Math.floor(Math.random()*CKEYS.length)],ready:true,cpu:true,team:1});emit('notice','沒人來⋯幫你抓一台電腦當對手');}
       room.seats.forEach(s=>s.ready=true);emit('notice','時間到！沒選的就用現在這隻');go();});};
   return{
@@ -2854,6 +2857,7 @@ function MockNet(){
       else if(t==='map')room.map=d.map;
       else if(t==='kick')room.seats=room.seats.filter(x=>x.id!==d.target);
       else if(t==='addcpu'&&room.seats.length<(room.mode==='boss'?4:8)){room.seats.push({id:'cpu'+rid(),name:'電腦'+(room.seats.filter(x=>x.cpu).length+1),ch:CKEYS[Math.floor(Math.random()*CKEYS.length)],ready:true,cpu:true,team:room.seats.length%2});}
+      else if(t==='redeadline'&&s===undefined){deadline();}
       else if(t==='emote'){emit('emote',d);return;}
       push();
     },
@@ -2919,7 +2923,7 @@ function lbRoom(){
 function lbTick(){
   const r=LB.room;if(!r||!r.deadline||LB.screen!=='room')return;
   const sec=Math.max(0,Math.ceil((r.deadline-Date.now())/1000)),el=$('lb-timer');
-  $('lb-sec').textContent=sec;el.classList.toggle('hurry',sec<=10);
+  $('lb-sec').textContent=sec>=60?Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0'):sec;el.classList.toggle('hurry',sec<=10);$('lb-reset').hidden=!isHost();
   if(sec!==LB.lastSec){if(sec<=10&&sec>0&&LB.lastSec!==-1)tone(sec<=3?900:650,.07,{type:'square',vol:.09,exact:true});LB.lastSec=sec;}
 }
 function escapeHtml(t){return String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -2982,6 +2986,7 @@ function lbWire(){
   $('lb-join').onclick=()=>{if(!nameOk())return;const code=$('lb-joincode').value.replace(/\D/g,'');if(code.length!==4){lbNote('輸入朋友給你的 4 位數房號');return;}lbConnect();LB.net.join(code,LB.me);lbNote('連線中⋯');SFX.click();};
   $('lb-joincode').addEventListener('keydown',e=>{if(e.key==='Enter')$('lb-join').click();});
   $('lb-leave').onclick=()=>{lbClear();if(LB.net)LB.net.leave();LB.net=null;LB.room=null;lbShow('home');};
+  $('lb-reset').onclick=()=>{if(!LB.net||!isHost())return;LB.net.send('redeadline',{});LB.lastSec=-1;lbNote('重新倒數 5 分鐘，慢慢等朋友');SFX.click();};
   $('lb-copy').onclick=()=>{const c=$('lb-code').textContent;try{navigator.clipboard.writeText(c).then(()=>lbNote('已複製房號 '+c),()=>lbNote('房號：'+c));}catch(_){lbNote('房號：'+c);}};
   document.querySelectorAll('#lb-mode button').forEach(b=>b.onclick=()=>{if(isHost())LB.net.send('mode',{mode:b.dataset.m});});
   $('lb-map').onchange=e=>{if(isHost())LB.net.send('map',{map:e.target.value});};
@@ -3144,6 +3149,7 @@ function FireNet(db){
       else if(t==='kick'&&amHost)db.remove(P('seats/'+d.target));
       else if(t==='addcpu'&&amHost&&seats.length<(meta.mode==='boss'?4:8)){const id='cpu'+rid();db.set(P('seats/'+id),{name:'電腦'+(seats.filter(x=>x.cpu).length+1),ch:CKEYS[Math.floor(Math.random()*CKEYS.length)],cpu:true,ready:true,team:seats.length%2,j:db.now()});}
       else if(t==='emote')db.push(P('emo'),{id:me.id,e:d.e,t:db.now()});
+      else if(t==='redeadline'&&amHost)db.set(P('meta/deadline'),db.now()+PICK_SEC*1000);
     },
     async backToRoom(){ // after a match: host clears the old game, everyone un-readies
       if(host()){const now=db.now(),up={};seats.forEach(s=>{if(!s.cpu)up[s.id+'/ready']=false;});await db.update(P('seats'),up);await db.set(P('meta/deadline'),now+PICK_SEC*1000);await db.remove(P('game'));await db.remove(P('start'));}
