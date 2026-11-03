@@ -2133,7 +2133,8 @@ function settlePlayers(dt){
       }
     }else{p.vy=0;p.vx=0;if(p.y<water-10){p.safeX=p.x;p.safeY=p.y;}}
     if(p.y>=water+4&&p.ch==='pine'&&!p.rescued&&p.hp>15&&p.safeX!=null&&!gmFor('god',p)){p.rescued=true;{let fx=p.safeX,fy=null;for(let d=0;d<W&&fy==null;d+=4)for(const sg of[1,-1]){const x=p.safeX+sg*d;if(x<14||x>W-14)continue;const y=surfaceY(x);if(y<water-12&&bodyFree(x,y-1)){fx=x;fy=y-1;break;}}p.x=fx;p.y=fy==null?p.safeY:fy;}p.vy=0;p.vx=0;p.hp-=15;setAnim(p,'air');skill(p,null,null,'-15');continue;}
-    if(p.y>=water+4&&!p.swim&&!gmFor('god',p)){p.alive=false;p.hp=0;texts.push({x:p.x,y:water-40,t:1.6,s:'咕嚕咕嚕⋯⋯落海！',c:'#bfe9f2'});SFX.splash();SFX.whistleDown();}
+    if(p.ch==='shark'&&p.y>=water+4){p.y=Math.max(p.y,water+10);if(p.y>water+10)p.y=water+10;p.vy=Math.min(p.vy,0);p.vx=Math.abs(p.vx)<8?0:p.vx*.9;if(!p.swim){p.swim=true;skill(p);SFX.splash();}}
+    if(p.y>=water+4&&!p.swim&&p.ch!=='shark'&&!gmFor('god',p)){p.alive=false;p.hp=0;texts.push({x:p.x,y:water-40,t:1.6,s:'咕嚕咕嚕⋯⋯落海！',c:'#bfe9f2'});SFX.splash();SFX.whistleDown();}
     else if(p.hp<=0){p.alive=false;texts.push({x:p.x,y:p.y-60,t:1.4,s:'倒下',c:'#ffb3a3'});}
   }
   return still;
