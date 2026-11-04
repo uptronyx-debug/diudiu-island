@@ -1199,6 +1199,8 @@ ol.road li{border-color:#d9b98a}
 .pk-grp b{font:900 11px var(--font-display);color:#fff;background:var(--ink);border-radius:8px;padding:1px 6px;white-space:nowrap}
 .pk-grp.boost b{background:#e0661c}
 .ii-grp{flex-basis:100%;margin:6px 0 -6px;font:900 18px var(--font-display);color:#fff;text-shadow:0 2px 0 var(--ink),2px 0 0 var(--ink),-2px 0 0 var(--ink),0 -2px 0 var(--ink)}
+#su-bossrow{display:none!important}#lb-boss,#lb-boss+.fx-btn{display:none!important}
+.pick-grid .pk{width:min(18.6%,160px)!important}
 </style>
 
 <div class="wrap">
@@ -2465,7 +2467,7 @@ const BOSSES={
   shark: {name:'鯊很大',      aura:'#5fc4ff',line:{cannon:'鯊魚雨！鯊很大！',geyser:'大白鯊噴水！',tail:'鯊魚尾大甩！'}},
   hermit:{name:'殼霸大地主',  aura:'#f4a6b8',line:{cannon:'寄居蟹雨！搶殼啦',geyser:'殼裡噴熱水！',tail:'大殼滾過去！'}}
 };
-const BKEYS=Object.keys(BOSSES),BOSS_S=2.6;
+const BKEYS=['boss'],BOSS_S=2.6; // caped critter bosses parked until they get their own designs
 /* boss look: giant version of the critter + flaming aura, cape and a hovering crown */
 function drawBossFig(c,p,x,y,r,s){
   if(p.ch==='boss'){drawChar(c,'boss',x,y,p.face||-1,r,s);return;}
@@ -2520,7 +2522,7 @@ function newGame(){
   players.forEach(p=>{const s=sl[p.slot];if(s&&s.name)p.name=s.name;if(s&&s.tag)p.tag=s.tag;p.remote=!!(s&&s.remote);p.uid=s&&s.uid||null;p.lv=s&&DIFF[s.lv]?s.lv:null;});
   if(!ON){const hs=players.filter(p=>!p.cpu&&!p.boss);if(hs.length===1&&LB.me&&LB.me.name)hs[0].name=LB.me.name;}
   players.forEach((p,i)=>{p.alt=players.slice(0,i).some(q=>q.ch===p.ch&&q.team!==p.team);});
-  if(boss){const bk=setup.boss&&BOSSES[setup.boss]?setup.boss:BKEYS[Math.floor(rng()*BKEYS.length)];const B=mk(bk,bx,-1,true);Object.assign(B,{boss:true,fixed:true,team:1,cy:bk==='boss'?58:15*BOSS_S,hr:bk==='boss'?74:25*BOSS_S,headCut:bk==='boss'?92:-CHARS[bk].head[1]*BOSS_S*.72,slot:-1,tag:'魔王',color:'#ff5d5d',name:BOSSES[bk].name,kit:[],items:{}});
+  if(boss){const bk=setup.boss&&BKEYS.includes(setup.boss)?setup.boss:BKEYS[Math.floor(rng()*BKEYS.length)];const B=mk(bk,bx,-1,true);Object.assign(B,{boss:true,fixed:true,team:1,cy:bk==='boss'?58:15*BOSS_S,hr:bk==='boss'?74:25*BOSS_S,headCut:bk==='boss'?92:-CHARS[bk].head[1]*BOSS_S*.72,slot:-1,tag:'魔王',color:'#ff5d5d',name:BOSSES[bk].name,kit:[],items:{}});
     B.hp=B.maxHp=Math.round((170+85*n)*({easy:.7,normal:1,hard:1.3}[diff]||1));players.push(B);}
   if(boss){const bi=players.length-1,hs=players.slice(0,bi).map((_,i)=>i),every=hs.length<=2?1:2;order=[];hs.forEach((h,i)=>{order.push(h);if((i+1)%every===0||i===hs.length-1)order.push(bi);});}
   else if(team){const A=players.filter(p=>p.team===0),B=players.filter(p=>p.team===1);order=[];while(A.length||B.length){if(A.length)order.push(players.indexOf(A.shift()));if(B.length)order.push(players.indexOf(B.shift()));}}
@@ -3562,14 +3564,14 @@ function saveKit(k){try{localStorage.setItem('diudiu-kit',JSON.stringify(k));}ca
 let pickTip=null;
 function drawPick(){
   pickGrid.innerHTML='';
-  IKEYS.forEach((k,ix)=>{if(ix===0||!!ISELF[k]!==!!ISELF[IKEYS[ix-1]]){if(ix)pickGrid.appendChild(Object.assign(document.createElement('i'),{className:'pk-br'}));const t=document.createElement('span');t.className='pk-grp '+(ISELF[k]?'self':'boost');t.innerHTML=ISELF[k]?'<b>自己用</b>':'<b>加強丟擲物</b>';t.prepend(ISELF[k]?(()=>{const cv=document.createElement('canvas');cv.width=cv.height=96;const g=cv.getContext('2d');try{drawChar(g,(picking&&picking.ch)||'pine',48,88,1,rig('idle',0,0,{aim:.5,active:false,power:0}),1.9);}catch(_){}return cv;})():iconCanvas('coco',34));pickGrid.appendChild(t);}
+  IKEYS.forEach((k,ix)=>{if(ix===0||!!ISELF[k]!==!!ISELF[IKEYS[ix-1]]){if(ix)pickGrid.appendChild(Object.assign(document.createElement('i'),{className:'pk-br'}));}
     const b=document.createElement('button');b.className='pk';b.id='pk-'+k;b.setAttribute('aria-pressed',chosen.includes(k));
     b.innerHTML=`<span class="pk-ic"></span><b>${ITEMS[k].name}</b><i class="pk-n">×${ITEMS[k].n}</i><span class="pk-f">${ITEMFUN[k]}</span><em class="pk-stamp">帶走</em>`;b.querySelector('.pk-ic').appendChild(iconCanvas(k,52));
     b.onclick=()=>{if(chosen.includes(k))chosen=chosen.filter(x=>x!==k);else{chosen.push(k);if(chosen.length>3)chosen.shift();}pickTip=k;drawPick();SFX.click();};
     pickGrid.appendChild(b);
   });
   const tk=pickTip||chosen[chosen.length-1];$('pick-tip').innerHTML=tk?`<b>${ITEMS[tk].name}</b>：${ITEMFUN[tk]}<br><small>${ITEMS[tk].desc}（可用 ${ITEMS[tk].n} 次）</small>`:'點道具看它在幹嘛';
-  $('pick-cnt').textContent=['還要撿 3 樣','再撿 2 樣','再撿 1 樣','撿好了，出發！'][chosen.length]||'';pickGo.disabled=chosen.length!==3;
+  $('pick-cnt').textContent=['還要撿 3 樣','再撿 2 樣','再撿 1 樣',''][chosen.length]||'';pickGo.disabled=chosen.length!==3;
 }
 let pickLeft=0;const PICK_T=20;
 function nextPick(){ // after the fly-by intro: every human sees who's in the match, then picks 3 items
@@ -4378,7 +4380,7 @@ $('mn-byecrowd').innerHTML=['pine','octo','shark','monkey','jelly'].map(k=>`<can
 $('mn-crowd').innerHTML=CKEYS.map((k,i)=>`<canvas width="110" height="110" data-ch="${k}" data-id="mc-${k}"></canvas>`).join('');
 stageEl.addEventListener('pointerdown',e=>{if(intro&&menuEl.hidden&&sysEl.hidden&&setupEl.hidden&&e.target.closest('#cv,.hud,.stage>canvas')!==null)endIntro();},true);
 let previewAnim='idle';
-(()=>{const box=$('ii-grid');IKEYS.forEach((k,i)=>{if(i===0||!!ISELF[k]!==!!ISELF[IKEYS[i-1]]){const h=document.createElement('h4');h.className='ii-grp';h.textContent=ISELF[k]?'自己用':'加強丟擲物（這回合丟的每一顆都有效）';box.appendChild(h);}const d=document.createElement('div');d.className='ii';d.dataset.k=k;
+(()=>{const box=$('ii-grid');IKEYS.forEach((k,i)=>{if(i===0||!!ISELF[k]!==!!ISELF[IKEYS[i-1]]){const h=document.createElement('h4');h.className='ii-grp';h.textContent=ISELF[k]?'自己用':'加強丟擲物';box.appendChild(h);}const d=document.createElement('div');d.className='ii';d.dataset.k=k;
   d.innerHTML=`<div class="ii-ic"></div><h3>${ITEMS[k].name}<i>×${ITEMS[k].n}</i></h3><p class="ii-fun">${ITEMFUN[k]}</p><p class="ii-do">${ITEMS[k].desc}</p>`;
   d.querySelector('.ii-ic').appendChild(iconCanvas(k,64));box.appendChild(d);});})();
 (()=>{const box=$('wp-grid'),mx=(k)=>Math.max(...WKEYS.map(x=>WEAPONS[x][k]));
