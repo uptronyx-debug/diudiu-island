@@ -960,6 +960,32 @@ ol.road li{border-color:#d9b98a}
 }
 .seat .away{position:absolute;top:28px;left:50%;transform:translateX(-50%) rotate(-6deg);background:#ffd23f;border:2px solid var(--ink);border-radius:8px;font:900 11px var(--font-display);padding:0 6px;z-index:2}
 .seat:has(.away){opacity:.75}
+
+.lb-wait:not([hidden]){display:flex;flex-wrap:wrap;align-items:center;gap:6px;font:800 13px var(--font-display);color:var(--ink)}
+.lb-wait b{background:var(--ink);color:#fff;border-radius:8px;padding:1px 8px;transform:rotate(-3deg)}
+.lb-wait span{background:#fff;border:2px solid var(--ink);border-radius:999px;padding:0 10px}
+.lb-wait span.me{background:#ffb547}
+.lb-rm em.watch{background:#b9e36a!important}
+.lb-rm small b.live{color:#fff;background:#e8322b;border-radius:6px;padding:0 5px;margin-right:4px;font-size:11px}
+.spec-tag:not([hidden]){position:absolute;left:50%;bottom:calc(max(10px,var(--sbm)) + 4px);transform:translateX(-50%) rotate(-2deg);z-index:6;background:#e8322b;color:#fff;font:900 15px var(--font-display);border:2.5px solid var(--ink);border-radius:12px;padding:2px 14px;box-shadow:0 3px 0 var(--ink);pointer-events:none}
+.stage:has(.spec-tag:not([hidden])) .ctrl{display:none!important}
+@media (min-height:561px){
+  .lobby{overflow:hidden}
+  .lb-room:not([hidden]){height:100%;display:flex!important;flex-direction:column;gap:8px!important;padding-top:0!important}
+  .lb-top,.lb-set{flex:none}
+  .lb-seats:not(.split){display:flex!important;flex-wrap:nowrap!important;justify-content:center;gap:8px!important;flex:none}
+  .lb-seats:not(.split) .seat,.lb-seats:not(.split) .seat.empty{width:12%!important;max-width:150px!important;min-height:0!important;height:clamp(120px,22vh,180px);aspect-ratio:auto!important}
+  .lb-seats:not(.split) .seat canvas{width:clamp(44px,8vh,70px)!important;height:clamp(44px,8vh,70px)!important}
+  .lb-seats.split{flex:none}
+  .lb-team-seats{flex-wrap:nowrap!important}
+  .lb-team .seat,.lb-team .seat.empty{width:24%!important;min-height:0!important;height:clamp(120px,22vh,170px)}
+  .seat .sbtn{white-space:nowrap;font-size:12px;padding:3px 9px}
+  .lb-picks{flex:none;flex-wrap:nowrap!important;justify-content:space-between!important;gap:0!important}
+  .pkc{width:8.2%!important}
+  .pkc canvas{width:clamp(44px,8vh,76px)!important;height:clamp(44px,8vh,76px)!important}
+  .lb-passive{flex:none;min-height:0!important}
+  .lb-bottom{margin-top:auto;flex:none;position:static!important}
+}
 </style>
 
 <div class="wrap">
@@ -976,6 +1002,7 @@ ol.road li{border-color:#d9b98a}
       <div class="hud" aria-hidden="true">
         <div class="plist" id="pl-a"></div>
         <div class="boss-hud" id="boss-hud" hidden></div>
+        <div class="spec-tag" id="spec-tag" hidden>觀戰中</div>
         <div class="mid"><div class="wind" id="wind-box"><i>風</i><span id="w-arrow"></span><b id="w-val"></b></div><small id="h-turn">第 1 回合</small></div>
         <div class="plist r" id="pl-b"></div>
       </div>
@@ -1237,6 +1264,7 @@ ol.road li{border-color:#d9b98a}
       <small id="lb-hostnote"></small>
     </div>
     <div class="lb-seats" id="lb-seats"></div>
+    <div class="lb-wait" id="lb-wait" hidden></div>
     <h3 class="lb-h">選你的角色</h3>
     <div class="lb-picks" id="lb-picks"></div>
     <p class="lb-passive" id="lb-passive"></p>
@@ -3098,7 +3126,7 @@ function renderDeck(){
 }
 function cycleWeapon(){
   const c=players[turn];if(!canHuman()||charging)return;
-  const inf=gmFor('ammo',c),i=WKEYS.indexOf(sel);
+  fixInf(c);const inf=gmFor('ammo',c),i=WKEYS.indexOf(sel);
   for(let j=1;j<=WKEYS.length;j++){const k=WKEYS[(i+j)%WKEYS.length];if(c.ammo[k]>0||inf){sel=k;break;}}
   SFX.click();renderDeck();toast(`<b>${WEAPONS[sel].name}</b>：${WDESC[sel]}`,1600);
 }
@@ -3388,9 +3416,9 @@ const MODE_N={ffa:'個人混戰',team:'兩隊對決',boss:'合力打魔王'};
 function lbRooms(v,mock){
   const box=$('lb-rooms');if(!box)return;const now=NETDB?NETDB.now():Date.now();
   LB.lobV=v;if(!mock&&!LB.lobTick)LB.lobTick=setInterval(()=>{if(LB.open&&LB.screen==='home')lbRooms(LB.lobV);},10000);
-  const list=Object.entries(v||{}).map(([code,r])=>({code,...r})).filter(r=>r&&r.c>0&&r.c<r.x&&(mock||r.a&&now-r.a<50000)).sort((a,b)=>(b.t||0)-(a.t||0)).slice(0,20);
+  const list=Object.entries(v||{}).map(([code,r])=>({code,...r})).filter(r=>r&&r.c>0&&(r.c<r.x||r.s)&&(mock||r.a&&now-r.a<50000)).sort((a,b)=>(b.t||0)-(a.t||0)).slice(0,20);
   if(!list.length){box.innerHTML='<p class="lb-empty">還沒有人開房間，你先開一間吧</p>';return;}
-  box.innerHTML=list.map((r,i)=>`<button class="lb-rm" data-code="${escapeHtml(r.code)}"><b>${escapeHtml(r.n||'某人')} 的房間</b><small>${MODE_N[r.m]||''}・${r.map&&MAPS[r.map]?MAPS[r.map].name:'隨機地圖'}</small><i>${r.c}/${r.x}</i><em>加入</em></button>`).join('');
+  box.innerHTML=list.map((r,i)=>`<button class="lb-rm" data-code="${escapeHtml(r.code)}"><b>${escapeHtml(r.n||'某人')} 的房間</b><small>${r.s?'<b class="live">開打中</b>':''}${MODE_N[r.m]||''}・${r.map&&MAPS[r.map]?MAPS[r.map].name:'隨機地圖'}</small><i>${r.c}/${r.x}</i><em class="${r.s?'watch':''}">${r.s?'觀戰':'加入'}</em></button>`).join('');
 }
 function lbOpen(){LB.open=true;LB.me=LB.me||lbLoadMe();$('lobby').hidden=false;lbShow('home');
   netInit().then(db=>{if(LB.lobUnsub){try{LB.lobUnsub();}catch(_){}LB.lobUnsub=null;}
@@ -3408,12 +3436,12 @@ function lbConnect(){
   LB.net.on('notice',lbNote);
   LB.net.on('pickfx',d=>lbFx(d.id));
   LB.net.on('emote',d=>{LB.bubbles[d.id]={e:d.e,t:performance.now()};if(LB.screen==='room')lbRoom();tone(900,.08,{type:'square',vol:.08});const id=setTimeout(()=>{if(LB.screen==='room')lbRoom();},2700);LB.timers.push(id);});
-  LB.net.on('start',st=>{LB.start=st||null;lbCountdown();});
+  LB.net.on('start',st=>{LB.start=st||null;if(LB.net&&LB.net.watching){let n=0;const go=()=>{if(!LB.net||!LB.start)return;if(LB.room&&LB.room.seats&&LB.room.seats.length)lbLaunch();else if(n++<40)setTimeout(go,200);};setTimeout(go,200);return;}lbCountdown();});
   LB.net.on('room',r=>{if(ON)netSeats(r);});
   LB.net.on('closed',()=>{lbClear();if(LB.net)LB.net.leave();LB.net=null;LB.room=null;if(LB.open)lbShow('home');});
   LB.net.on('kicked',()=>{lbNote('你被房主請出房間了');lbClear();if(LB.net)LB.net.leave();LB.net=null;LB.room=null;if(LB.open)lbShow('home');});
   LB.net.on('hostgone',()=>{if(ON)netHostGone();else{lbNote('房主離開了');lbClose();if(!LB.open)lbOpen();}});
-  LB.net.on('reset',()=>{});
+  LB.net.on('reset',()=>{if(ON&&ON.spec){netStop();LB.inMatch=false;netOverBtns();$('over').hidden=true;LB.open=true;$('lobby').hidden=false;LB.lastSec=-1;LB.start=null;lbShow('room');menuShow('home');}});
 }
 const isHost=()=>LB.room&&LB.room.host===LB.me.id;
 const mySeat=()=>LB.room&&LB.room.seats.find(s=>s.id===LB.me.id);
@@ -3482,6 +3510,9 @@ function lbRoom(){
   pk.querySelectorAll('.pkc').forEach(b=>b.setAttribute('aria-pressed',!!me&&me.ch===b.dataset.ch));
   pk.classList.toggle('locked',!!(me&&me.ready));
   if(me)$('lb-passive').innerHTML=`<b>${CHARS[me.ch].name}・${PASSIVE[me.ch].name}</b>　${PASSIVE[me.ch].desc}`;
+  {const wb=$('lb-wait');const ws=r.watchers||[];wb.hidden=!ws.length;wb.innerHTML=ws.length?'<b>等待區</b>'+ws.map(x=>`<span class="${x.id===LB.me.id?'me':''}">${escapeHtml(x.name||'某人')}</span>`).join(''):'';}
+  if(r.watching){const go=$('lb-go');go.textContent='在等待區';go.disabled=true;$('lb-gohint').textContent=r.started?'正在打，打完自動上場':'有空位會自動補上';lbTick();fxEnhance($('lb-room'));return;}
+  $('lb-go').disabled=false;
   const wait=r.seats.filter(s=>!s.ready).length,go=$('lb-go');
   go.textContent=me&&me.ready?'等一下，我要換':'準備好了！';go.classList.toggle('on',!!(me&&me.ready));
   $('lb-gohint').textContent=wait?`還有 ${wait} 人在選，全員準備好就直接開打`:'全員準備好了！';
@@ -3510,7 +3541,7 @@ function lbLaunch(){
     const seats=st.order.map(id=>r.seats.find(s=>s.id===id)||{id,ch:'pine',cpu:true,name:'電腦',team:0});
     if(st.diff)diff=st.diff;
     setup={mode:st.mode||r.mode,map:st.map,boss:st.boss||'random',seed:st.seed,slots:seats.map(s=>{const mine=s.id===LB.me.id;return{ch:s.ch,cpu:!mine,remote:!mine&&!s.cpu,uid:s.id,lv:s.lv||null,team:s.team||0,name:s.name,tag:mine?'你':s.cpu?'電腦':'玩家'};})};
-    netGameStart(LB.net,r.host===LB.me.id,st.seed);LB.inMatch=true;lbClose(true);
+    netGameStart(LB.net,r.host===LB.me.id,st.seed);if(LB.net.watching){ON.spec=true;ON.hid=performance.now()+20000;}LB.inMatch=true;lbClose(true);
   }else{
     setup={mode:r.mode,map:r.map,boss:r.boss||'random',slots:r.seats.map(s=>({ch:s.ch,cpu:s.id!==LB.me.id,lv:s.lv||null,team:s.team||0,name:s.name,tag:s.id===LB.me.id?'你':'電腦'}))};
     lbClose();
@@ -3591,6 +3622,7 @@ function lbWire(){
 /* ---- match intro: quick fly-by over every player, then point at you ---- */
 let intro=null;
 function startIntro(){
+  if(ON&&ON.spec){nextPick();toast('觀戰中，下一場自動上場',2600);return;}
   const vt=viewerTeam(),me=players.find(p=>!p.cpu&&!p.boss&&p.alive)||null;
   const seq=players.filter(p=>p.alive&&!(p.camo&&vt!==null&&vt!==p.team));
   if(reduce||!seq.length){nextPick();return;}
@@ -3682,15 +3714,20 @@ function FireNet(db){
   const h={},emit=(t,d)=>(h[t]||[]).forEach(f=>f(d));let code=null,me=null,meta=null,seats=[],unsubs=[],started=false,joined=false,dlTimer=null,t0=0,startBusy=false;
   const P=s=>'rooms/'+code+(s?'/'+s:'');
   const host=()=>meta&&meta.host===me.id;
+  let watching=false,watchers=[],preStart=false;
+  const maxSeats=()=>meta&&meta.mode==='boss'?4:8;
+  async function seatUp(){ // waiting-area → real seat
+    if(!watching||started||preStart||!meta||seats.length>=maxSeats())return;watching=false;
+    await db.set(P('seats/'+me.id),{name:me.name,ch:me.ch,team:seats.length%2,ready:false,j:db.now()});await db.remove(P('watch/'+me.id));db.cancelDisc(P('watch/'+me.id));markBack();emit('notice','有位子了，你上場！');}
   const GRACE_LOBBY=60000,GRACE_HOST=20000;
   let presTimer=null,visH=null;
-  const markBack=()=>{if(!code||!joined)return;db.set(P('seats/'+me.id+'/off'),null);db.onDiscStamp(P('seats/'+me.id+'/off'));};
-  const markAway=()=>{if(!code||!joined)return;db.set(P('seats/'+me.id+'/off'),db.now());};
+  const markBack=()=>{if(!code||!joined||watching)return;db.set(P('seats/'+me.id+'/off'),null);db.onDiscStamp(P('seats/'+me.id+'/off'));};
+  const markAway=()=>{if(!code||!joined||watching)return;db.set(P('seats/'+me.id+'/off'),db.now());};
   function presence(){
     unsubs.push(db.onConnected(on=>{if(on){markBack();if(host())db.onDiscRemove('lobby/'+code);lobLast='';syncLobby();}}));
     visH=()=>{if(document.hidden)markAway();else markBack();};document.addEventListener('visibilitychange',visH);
     presTimer=setInterval(()=>{if(!meta||!joined)return;const now=db.now();
-      if(host()&&!started&&meta.pub!==false&&!document.hidden&&now-beatT>15000){beatT=now;db.set('lobby/'+code+'/a',now);}
+      if(host()&&meta.pub!==false&&!document.hidden&&now-beatT>15000){beatT=now;db.set('lobby/'+code+'/a',now);}
       if(host()&&!started)seats.forEach(x=>{if(!x.cpu&&x.id!==me.id&&x.off&&now-x.off>GRACE_LOBBY)db.remove(P('seats/'+x.id));});
       const hs=seats.find(x=>x.id===meta.host);
       if(!host()&&(!hs||hs.off&&now-hs.off>GRACE_HOST)){const cand=seats.filter(x=>!x.cpu&&!x.off&&x.id!==meta.host)[0];if(cand&&cand.id===me.id){db.set(P('meta/host'),me.id);emit('notice','房主不見了，你變成新房主');}}
@@ -3698,11 +3735,11 @@ function FireNet(db){
   }
   let lobLast='';
   const syncLobby=()=>{if(!code||!meta||!host())return;const L='lobby/'+code;
-    if(started||meta.pub===false){if(lobLast!=='x'){lobLast='x';db.remove(L);}return;}
-    const mine=seats.find(x=>x.id===me.id),v={h:me.id,n:mine?mine.name:me.name,m:meta.mode,map:meta.map,c:seats.length,x:meta.mode==='boss'?4:8,t:meta.created||db.now()},j=JSON.stringify(v);
+    if(meta.pub===false){if(lobLast!=='x'){lobLast='x';db.remove(L);}return;}
+    const mine=seats.find(x=>x.id===me.id),v={h:me.id,n:mine?mine.name:me.name,m:meta.mode,map:meta.map,c:seats.length,x:meta.mode==='boss'?4:8,s:started?1:0,w:watchers.length,t:meta.created||db.now()},j=JSON.stringify(v);
     if(j!==lobLast){lobLast=j;db.set(L,{...v,a:db.now()});}};
   let beatT=0;
-  const pushRoom=()=>{if(!meta)return;syncLobby();emit('room',{now:db.now(),code,host:meta.host,mode:meta.mode,map:meta.map,boss:meta.boss||'random',pub:meta.pub!==false,deadline:meta.deadline-(db.now()-Date.now()),seats:seats.map(s=>({...s}))});};
+  const pushRoom=()=>{if(!meta)return;syncLobby();emit('room',{now:db.now(),code,host:meta.host,mode:meta.mode,map:meta.map,boss:meta.boss||'random',pub:meta.pub!==false,deadline:meta.deadline-(db.now()-Date.now()),started,watching,watchers:watchers.map(x=>({...x})),seats:seats.map(s=>({...s}))});};
   const min=()=>meta&&meta.mode==='boss'?1:2;
   async function doStart(force){
     if(!host()||started||startBusy)return;startBusy=true;
@@ -3728,9 +3765,11 @@ function FireNet(db){
       const old=seats;seats=Object.entries(v||{}).map(([id,s])=>({id,...s})).sort((a,b)=>(a.j||0)-(b.j||0));
       if(joined&&!started){seats.filter(s=>!old.some(o=>o.id===s.id)&&s.id!==me.id&&!s.cpu).forEach(s=>emit('notice',s.name+' 加入了房間'));
         old.filter(o=>!seats.some(s=>s.id===o.id)&&!o.cpu&&o.id!==me.id).forEach(o=>emit('notice',o.name+' 離開了'));}
-      if(joined&&meta&&!seats.some(s=>s.id===me.id)){joined=false;emit('kicked');return;}
+      if(joined&&meta&&!watching&&!seats.some(s=>s.id===me.id)){joined=false;emit('kicked');return;}
+      if(watching&&!started&&!preStart&&watchers[0]&&watchers[0].id===me.id)seatUp();
       pushRoom();hostCheck();}));
-    unsubs.push(db.onValue(P('start'),v=>{if(v&&!started){started=true;clearTimeout(dlTimer);syncLobby();emit('start',v);}else if(!v&&started){started=false;syncLobby();emit('reset');}}));
+    unsubs.push(db.onValue(P('watch'),v=>{watchers=Object.entries(v||{}).map(([id,x])=>({id,...x})).sort((a,b)=>(a.j||0)-(b.j||0));if(watching&&!started&&!preStart&&watchers[0]&&watchers[0].id===me.id)seatUp();pushRoom();}));
+    unsubs.push(db.onValue(P('start'),v=>{preStart=false;if(v&&!started){started=true;clearTimeout(dlTimer);syncLobby();emit('start',v);}else if(!v&&started){started=false;syncLobby();emit('reset');if(watching){const k=watchers.findIndex(x=>x.id===me.id);if(k>=0&&k<maxSeats()-seats.length)setTimeout(seatUp,300*k);}}}));
     unsubs.push(db.onChild(P('emo'),(k,e)=>{if(e&&e.t>=t0-2000)emit('emote',e);}));
   }
   return{db,
@@ -3744,9 +3783,8 @@ function FireNet(db){
     async join(c,m){me=m;code=c;
       const mt=await db.get(P('meta'));
       if(!mt){emit('notice','找不到房號 '+c+'，再確認一下');emit('closed');return;}
-      if(await db.get(P('start'))){emit('notice','這間已經開打了，等下一場');emit('closed');return;}
-      const ss=await db.get(P('seats'))||{},n=Object.keys(ss).length;
-      if(n>=(mt.mode==='boss'?4:8)){emit('notice','房間滿了');emit('closed');return;}
+      const st=await db.get(P('start')),ss=await db.get(P('seats'))||{},n=Object.keys(ss).length;
+      if(st||n>=(mt.mode==='boss'?4:8)){watching=true;preStart=!!st;await db.set(P('watch/'+me.id),{name:me.name,j:db.now()});db.onDiscRemove(P('watch/'+me.id));joined=true;watch();presence();emit('notice',st?'正在打，先進來觀戰，下一場自動上場':'房間滿了，先在等待區，有空位自動補上');return;}
       await db.set(P('seats/'+me.id),{name:me.name,ch:me.ch,team:n%2,ready:false,j:db.now()});
       joined=true;watch();presence();
     },
@@ -3771,8 +3809,9 @@ function FireNet(db){
     },
     leave(){unsubs.forEach(u=>{try{u();}catch(_){}});unsubs=[];clearTimeout(dlTimer);clearInterval(presTimer);if(visH)document.removeEventListener('visibilitychange',visH);
       if(code&&joined)db.cancelDisc(P('seats/'+me.id+'/off'));
+      if(code&&joined&&watching){db.remove(P('watch/'+me.id));joined=false;code=null;return;}
       if(code&&joined){if(host()){db.remove(P());db.remove('lobby/'+code);}else{db.remove(P('seats/'+me.id));db.cancelDisc(P('seats/'+me.id));}}joined=false;code=null;},
-    path:s=>P(s),get code(){return code;}
+    path:s=>P(s),get code(){return code;},get watching(){return watching;}
   };
 }
 
@@ -3821,7 +3860,7 @@ function netCatchUp(){ // came back from the background: jump straight to the ne
   if(!ks.length)return false;
   const last=ks[ks.length-1];ON.noLog=true;ks.forEach(k=>{const e=ON.ends[k];(e.s.cv||[]).forEach(a=>_carve(a[0],a[1],a[2],false));});ON.noLog=false;
   const sn=ON.ends[last].s;ks.forEach(k=>delete ON.ends[k]);ON.rc=last+1;ON.hid=0;
-  (sn.p||[]).forEach((o,i)=>{const p=players[i];if(!p||!o)return;Object.assign(p,o);p.vx=0;p.vy=0;});if(sn.water!=null)water=sn.water;
+  (sn.p||[]).forEach((o,i)=>{const p=players[i];if(!p||!o)return;Object.assign(p,o);p.vx=0;p.vy=0;fixInf(p);});if(sn.water!=null)water=sn.water;
   if(sn.tp!=null){turnPos=sn.tp;turn=order[turnPos];}if(sn.tc!=null)turnCount=sn.tc;shotsLeft=sn.sl||0;
   projs=[];charging=false;cpu=null;bossMarks=[];ON.carveLog=[];ON.q=ON.q.filter(e=>e.tc>turnCount);pickEl.hidden=true;picking=null;intro=null;
   noteDeaths();afterResolve();return true;}
@@ -3852,9 +3891,10 @@ function netApply(s){
   if(!s)return;ON.noLog=true;
   (s.cv||[]).forEach(a=>_carve(a[0],a[1],a[2],false));
   ON.noLog=false;
-  (s.p||[]).forEach((o,i)=>{const p=players[i];if(!p||!o)return;Object.assign(p,o);p.vx=0;p.vy=0;});
+  (s.p||[]).forEach((o,i)=>{const p=players[i];if(!p||!o)return;Object.assign(p,o);p.vx=0;p.vy=0;fixInf(p);});
   if(s.water!=null)water=s.water;
 }
+function fixInf(p){if(p&&p.ammo)WKEYS.forEach(k=>{if(WEAPONS[k].uses===Infinity||p.ammo[k]==null)p.ammo[k]=WEAPONS[k].uses===Infinity?Infinity:(p.ammo[k]||0);});}
 function resolveGate(){
   if(!ON){afterResolve();return;}
   const c=players[turn];
@@ -3881,7 +3921,8 @@ function netHostGone(){
   if(!ON)return;ON.over=true;phase='over';
   $('over-title').textContent='房主斷線了';$('over-sub').textContent='這場先到這裡，回大廳重開一間吧';$('over').hidden=false;netOverBtns();
 }
-function netOverBtns(){const on=!!(ON||LB.inMatch);$('again').textContent=on?'回房間':'再來一局';$('over-setup').textContent=on?'離開房間':'改設定';}
+function netSpecTag(){const t=$('spec-tag');if(t)t.hidden=!(ON&&ON.spec);}
+function netOverBtns(){netSpecTag();const on=!!(ON||LB.inMatch);$('again').textContent=on?'回房間':'再來一局';$('over-setup').textContent=on?'離開房間':'改設定';}
 /* action wrappers: owner broadcasts, spectators can't act */
 document.addEventListener('visibilitychange',()=>{if(ON&&!document.hidden)ON.hid=performance.now();});
 const _doJump=doJump,_doDig=doDig,_useItem=useItem,_fire=fire,_skipTurn=skipTurn,_carve=carve;
@@ -3894,7 +3935,7 @@ function netWrap(name,orig){return function(...a){
   let r;NETMUTE++;try{r=orig.apply(this,a);}finally{NETMUTE--;}
   if(name!=='item'||r)netSend(ev);
   return r;};}
-if(new URLSearchParams(location.search).get('net')==='local')window.__dd=()=>({tc:turnCount,phase,turn,rc:ON&&ON.rc,q:ON&&ON.q.length,tk:ON&&JSON.stringify(ON.tk),p:players.map(p=>[p.name,Math.round(p.x),Math.round(p.y),p.hp,p.alive,p.tag])});
+if(new URLSearchParams(location.search).get('net')==='local')window.__lb=LB,window.__ammo=()=>players.map(p=>p.ammo.coco),window.__dd=()=>({tc:turnCount,phase,turn,rc:ON&&ON.rc,q:ON&&ON.q.length,tk:ON&&JSON.stringify(ON.tk),p:players.map(p=>[p.name,Math.round(p.x),Math.round(p.y),p.hp,p.alive,p.tag])});
 doJump=netWrap('jump',_doJump);doDig=netWrap('dig',_doDig);useItem=netWrap('item',_useItem);fire=netWrap('fire',_fire);skipTurn=netWrap('skip',_skipTurn);
 carve=function(cx,cy,r,rim){if(ON&&!ON.noLog)ON.carveLog.push([+cx.toFixed(1),+cy.toFixed(1),+r.toFixed(1)]);return _carve(cx,cy,r,rim);};
 

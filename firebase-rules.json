@@ -14,8 +14,17 @@
             ".write": "auth != null && ($uid === auth.uid || root.child('rooms/' + $code + '/meta/host').val() === auth.uid)"
           }
         },
-        "emo": { ".write": "auth != null" },
-        "game": { ".write": "auth != null" }
+        "emo": {
+          ".write": "auth != null"
+        },
+        "game": {
+          ".write": "auth != null"
+        },
+        "watch": {
+          "$uid": {
+            ".write": "auth != null && ($uid === auth.uid || root.child('rooms/' + $code + '/meta/host').val() === auth.uid)"
+          }
+        }
       }
     },
     "lobby": {
