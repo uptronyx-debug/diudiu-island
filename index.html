@@ -1189,6 +1189,16 @@ ol.road li{border-color:#d9b98a}
 .guide-in{padding-top:10px!important}
 .guide-in .pg-tabs{padding-top:6px}
 .wb{grid-template-columns:3.4em 1fr 4.6em!important}.wb span,.wb b{font-size:12.5px!important}
+
+.it-gap{display:block;width:10px;flex:none}
+.pk-br{flex-basis:100%;height:0;display:block}
+.pick-grid .pk{width:min(16.6%,150px)!important}
+.pick-grid{gap:4px 8px!important;padding-top:2px!important}.pk-grp canvas{width:44px!important;height:44px!important}
+.pk-grp{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:7%;min-width:52px;align-self:center;transform:rotate(-4deg)}
+.pk-grp canvas{width:38px!important;height:38px!important}
+.pk-grp b{font:900 11px var(--font-display);color:#fff;background:var(--ink);border-radius:8px;padding:1px 6px;white-space:nowrap}
+.pk-grp.boost b{background:#e0661c}
+.ii-grp{flex-basis:100%;margin:6px 0 -6px;font:900 18px var(--font-display);color:#fff;text-shadow:0 2px 0 var(--ink),2px 0 0 var(--ink),-2px 0 0 var(--ink),0 -2px 0 var(--ink)}
 </style>
 
 <div class="wrap">
@@ -1504,7 +1514,7 @@ ol.road li{border-color:#d9b98a}
 
 <script>
 (()=>{
-let W=960;const VW=960,H=540,G=420,VMAX=780,WIND_K=4,HIT_R=24,STEP=1/120,TURN_T=25,SD_TURN=16,WATER0=H-34;
+let W=960;const VW=960,H=540,G=420,VMAX=780,WIND_K=4,HIT_R=24,STEP=1/120,TURN_T=25,SD_ROUND=6,WATER0=H-34;
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
 const stageEl=document.getElementById('stage'),gameEl=document.getElementById('game');
@@ -1534,21 +1544,22 @@ const WKEYS=Object.keys(WEAPONS);
 const WFUN={coco:'經典款，丟到天荒地老都不會用完',sling:'咻——直直飛過去，颱風天也吹不歪',durian:'水果之王，砸到會臭三天',guava:'芭樂三兄弟，總有一顆會中',shovel:'挖挖挖，把對手腳下挖空讓他掉下去',clay:'蓋一面牆躲起來，或墊腳爬上高台'};
 const WDESC={coco:'標準拋物線，數量無限',sling:'幾乎直線、風吹不歪',durian:'爆炸範圍最大、傷害最高',guava:'一次丟出三顆散開',shovel:'大範圍挖掉地形，傷害低',clay:'落地堆出土牆，可擋子彈或當踏板'};
 const ITEMS={
-  heal:   {name:'海龜湯',n:2,desc:'立刻回復 35 點血'},
-  double: {name:'買一送一',n:1,desc:'這回合可以丟兩次'},
-  power:  {name:'小辣椒',n:1,desc:'這回合傷害 ×1.5'},
-  freeze: {name:'剉冰',n:1,desc:'打中的對手下回合被凍住，直接跳過'},
-  thunder:{name:'雷公伯',n:1,desc:'落點再降一道雷，附加 22 傷害'},
-  tele:   {name:'落跑券',n:1,desc:'丟出的東西落地後，把你傳送到落點'},
-  homing: {name:'恐怖情人',n:1,desc:'丟出的東西會轉向最近的對手'},
+  heal:   {name:'海龜湯',n:2,desc:'這回合結束時回復 35 點血'},
+  shield: {name:'鴨鴨圈',n:1,desc:'到你下回合開始前，受到的傷害減半'},
   calm:   {name:'颱風假',n:1,desc:'這回合風力歸零'},
-  shield: {name:'鴨鴨圈',n:1,desc:'到你下回合開始前，受到的傷害減半'}
+  tele:   {name:'衝浪板',n:1,desc:'丟出的東西落地後，你衝浪到落點（不能配芭樂）'},
+  double: {name:'買一送一',n:1,desc:'這回合可以丟兩次'},
+  power:  {name:'小辣椒',n:1,desc:'這回合丟的東西傷害 ×1.5'},
+  freeze: {name:'剉冰',n:1,desc:'打中的對手下回合被凍住，直接跳過'},
+  thunder:{name:'雷公伯',n:1,desc:'落點劈一道雷，被劈到的對手下回合手會麻，蓄力條超快很難控制'},
+  homing: {name:'恐怖情人',n:1,desc:'這回合丟的每一顆都會轉向最近的對手'}
 };
+const ISELF={heal:1,shield:1,calm:1,tele:1};
 const IKEYS=Object.keys(ITEMS);
 const DIFF={easy:{pw:10,ang:7,wind:.6,learn:.12,item:.35},normal:{pw:6,ang:4,wind:.35,learn:.2,item:.55},hard:{pw:2.5,ang:1.5,wind:.1,learn:.25,item:.75}};
 
 let mode='cpu',diff='normal',assist='short',rng,players,projs,parts,texts,turn,wind,timeLeft,phase,settleT,power,pdir,charging,sel,banner,shake,cpu,clouds,acc=0;
-let roundNo=1,water=WATER0,turnCount=0,mods,shotsLeft,shotNo,lastHit=false;
+let roundNo=1,newRound=false,water=WATER0,turnCount=0,mods,shotsLeft,shotNo,lastHit=false;
 const input={left:false,right:false,up:false,down:false};
 let gmOn=false;
 const gm=k=>gmOn&&!!document.getElementById('gm-'+k)?.checked;
@@ -1973,7 +1984,7 @@ const PUN={pine:'旺來＝鳳梨，好運直接起飛',turtle:'元氣滿滿？�
 const proc=ch=>gm('proc')||rng()<ch;
 const cyOf=pl=>pl.cy||14,hitRof=pl=>pl.hr||HIT_R;
 const OUCH=['哎呦喂！','我的臉！','痛痛痛','嗚哇～','好痛喔','腰閃到了','要長包了','靠夭～','我要回家'];
-const ITEMFUN={heal:'一碗下肚，龜氣滿滿（不是真的海龜啦）',double:'老闆說今天椰子買一送一',power:'小辣椒大火氣，辣到手抖丟更痛',freeze:'請對手吃一碗，吃完直接腦凍',thunder:'雷公伯今天心情不好',tele:'丟出去的瞬間，人也跟著落跑',homing:'這顆椰子跟定你了，跑不掉的',calm:'風神放颱風假，今天不上班',shield:'鴨鴨說：交給我，呱'};
+const ITEMFUN={heal:'一碗下肚，龜氣滿滿（不是真的海龜啦）',double:'老闆說今天椰子買一送一',power:'小辣椒大火氣，辣到手抖丟更痛',freeze:'請對手吃一碗，吃完直接腦凍',thunder:'雷公伯今天心情不好，劈下去手麻三天',tele:'浪來了！人跟著丟出去的東西衝過去',homing:'這顆椰子跟定你了，跑不掉的',calm:'風神放颱風假，今天不上班',shield:'鴨鴨說：交給我，呱'};
 const TAUNT=['換你表演了','別手滑喔','丟下去就對了','瞄準一點啦','大家都在看你','今天手感如何？'];
 function viewerTeam(){const c=players&&players[turn];if(c&&!c.cpu)return c.team;const h=players&&players.find(q=>!q.cpu);return h?h.team:null;}
 const foeOf=(a,b)=>!!a&&!!b&&a!==b&&a.team!==b.team;
@@ -2242,14 +2253,13 @@ const ICON={
     c.beginPath();c.arc(11,17,6.5,1.6,4.7);c.arc(18,10,7.5,3.4,6);c.arc(28,11,7,3.8,.4);c.arc(33,18,5,4.9,1.6);c.closePath();const g=c.createLinearGradient(0,4,0,24);g.addColorStop(0,'#b8c4d0');g.addColorStop(1,'#7c8a98');fk(c,g);
     hl(c,15,8,3,1.4,-.4);eyes(c,21,14,.6,'mad');
     c.beginPath();c.moveTo(21,18);c.bezierCurveTo(18,16,14,17,13,20);c.bezierCurveTo(16,19,18,20,21,19.5);c.bezierCurveTo(24,20,26,19,29,20);c.bezierCurveTo(28,17,24,16,21,18);c.closePath();fk(c,'#fff',1.3);},
-  tele(c){ // a getaway ticket with a sprinting swirl
-    c.save();c.translate(20,21);c.rotate(-.18);
-    c.beginPath();c.moveTo(-16,-10);c.lineTo(16,-10);c.lineTo(16,-4);c.arc(16,0,4,-Math.PI/2,Math.PI/2,true);c.lineTo(16,10);c.lineTo(-16,10);c.lineTo(-16,4);c.arc(-16,0,4,Math.PI/2,-Math.PI/2,true);c.closePath();
-    const g=c.createLinearGradient(-16,-10,16,10);g.addColorStop(0,'#ffe27a');g.addColorStop(1,'#ffb547');fk(c,g);
-    c.setLineDash([2,2.4]);c.beginPath();c.moveTo(7,-9);c.lineTo(7,9);c.strokeStyle=IK;c.lineWidth=1.3;c.stroke();c.setLineDash([]);
-    for(let i=0;i<3;i++){c.beginPath();c.arc(-4,0,7-i*2.4,i*1.2,i*1.2+4.6);c.strokeStyle=['#9a6bff','#c39cff','#fff'][i];c.lineWidth=2.4;c.stroke();}
-    c.beginPath();c.moveTo(9.5,-3);c.lineTo(14,-3);c.moveTo(10.5,0);c.lineTo(14,0);c.moveTo(9.5,3);c.lineTo(14,3);ik(c,1.4);
-    c.restore();starI(c,34,6,3.6,'#fff');starI(c,6,34,2.6,'#fff');},
+  tele(c){ // surfboard riding a wave
+    c.beginPath();c.moveTo(2,32);c.bezierCurveTo(8,24,14,30,20,26);c.bezierCurveTo(26,22,30,14,38,18);c.lineTo(38,38);c.lineTo(2,38);c.closePath();const gw=c.createLinearGradient(0,18,0,38);gw.addColorStop(0,'#7fd8f0');gw.addColorStop(1,'#2f9ec4');fk(c,gw,1.8);
+    c.beginPath();c.moveTo(30,18);c.quadraticCurveTo(36,12,38,18);c.strokeStyle='#fff';c.lineWidth=2.4;c.stroke();
+    c.save();c.translate(19,17);c.rotate(-.55);c.beginPath();c.ellipse(0,0,17,5.6,0,0,6.28);const gb=c.createLinearGradient(-17,0,17,0);gb.addColorStop(0,'#ffd23f');gb.addColorStop(1,'#ff8a3d');fk(c,gb);
+    c.beginPath();c.moveTo(-15,0);c.lineTo(15,0);c.strokeStyle='#ff5d8f';c.lineWidth=2;c.stroke();c.beginPath();c.ellipse(0,0,17,5.6,0,0,6.28);ik(c,2);
+    eyes(c,-2,-.6,.42,'happy');mouth(c,-2,1.6,.4,'open');c.restore();
+    [[6,24],[12,28],[34,30]].forEach(([x,y])=>{c.beginPath();c.arc(x,y,1.4,0,6.28);c.fillStyle='#fff';c.fill();});starI(c,34,6,3.4,'#fff');},
   homing(c){ // a clingy coconut with stalker eyes
     c.save();c.translate(18,24);drawCoco(c,11.5,'');c.restore();
     c.fillStyle='#fff';c.beginPath();c.arc(13.5,22,4.6,0,6.28);c.arc(22.5,22,4.6,0,6.28);c.fill();c.beginPath();c.arc(13.5,22,4.6,0,6.28);ik(c,1.3);c.beginPath();c.arc(22.5,22,4.6,0,6.28);ik(c,1.3);
@@ -2618,10 +2628,10 @@ function startTurn(){
   turnCount++;if(ON)rng=mulberry32((ON.seed^Math.imul(turnCount,2654435761))>>>0);
   if(ON&&ON.isHost&&c&&c.uid&&c.uid!==ON.me&&c.remote&&seatAway(c.uid))setTimeout(()=>{if(ON&&players[turn]===c)netTakeover(c);},50);
   let note='';
-  if(turnCount>=SD_TURN&&!gm('sd')){water-=10;note='海水又漲了～快往高處跑';waveFX=1.6;SFX.splash();texts.push({x:cam.x,y:water-60,t:2,t0:2,s:'海水漲上來啦～',c:'#fff',big:true,stroke:'#2a8aa6'});}
+  if(roundNo>=SD_ROUND&&newRound&&!gm('sd')){water-=26;note='海水又漲了～快往高處跑';waveFX=1.6;SFX.splash();texts.push({x:cam.x,y:water-60,t:2,t0:2,s:'海水漲上來啦～',c:'#fff',big:true,stroke:'#2a8aa6'});}
   wind=Math.round((rng()*2-1)*10);
   if(gmOn&&document.getElementById('gm-wind').value!=='rand')wind=+document.getElementById('gm-wind').value;
-  c.shield=false;
+  c.shield=false;c.zapNow=!!c.zapNext;c.zapNext=false;if(c.zapNow){texts.push({x:c.x,y:c.y-110,t:1.8,t0:1.8,s:'手麻麻～力道失控',c:'#fff36b',big:true,stroke:'#6a5a00'});SFX.zap();}
   mods={used:null,armed:null};shotsLeft=1;shotNo=0;
   charging=false;power=0;pdir=1;c.stamina=100;c.stuckT=0;c.stuckNote=false;
   c.inkNow=!!c.inked;c.inked=false;c.walked=false;
@@ -2648,14 +2658,13 @@ function useItem(k){
   const inf=gmFor('ammo',c);
   if(phase!=='aim'||mods.used||shotNo>0||(!(c.items[k]>0)&&!inf))return false;
   if(!inf)c.items[k]--;mods.used=k;
-  if(k==='heal'){const g=Math.min(35,100-c.hp);c.hp+=g;texts.push({x:c.x,y:c.y-56,t:1.2,s:'+'+g,c:'#9ff08a'});}
+  if(k==='heal'){mods.healEnd=true;texts.push({x:c.x,y:c.y-56,t:1.2,s:'丟完就喝湯',c:'#9ff08a'});}
   else if(k==='double')shotsLeft=2;
   else if(k==='calm')wind=0;
   else if(k==='shield')c.shield=true;
   else mods[k]=true;
   banner={text:ITEMS[k].name+'！',sub:ITEMFUN[k],t:1.4};
   ({heal:SFX.heal,double:SFX.clone,power:SFX.power,freeze:SFX.freeze,thunder:SFX.thunder,tele:SFX.poof,homing:SFX.item,calm:SFX.snore,shield:SFX.duck}[k]||SFX.item)();
-  if(k==='heal')c.healT=1.4;
   for(let i=0;i<10;i++)parts.push({x:c.x,y:c.y-24,vx:(Math.random()-.5)*160,vy:-80-Math.random()*120,t:.6,c:['#ffd166','#fff','#b9e36a'][i%3],r:2.5,star:true});
   renderDeck();return true;
 }
@@ -2664,7 +2673,7 @@ function armItem(k){
   const c=players[turn];
   if(!canHuman()||charging||shotNo>0||mods.used)return;
   if(!(c.items[k]>0)&&!gmFor('ammo',c))return;
-  if(k==='heal'){if(mods.armed==='calm')wind=mods.savedWind;mods.armed=null;useItem('heal');return;}
+  if(k==='tele'&&sel==='guava'&&mods.armed!=='tele'){sel='coco';renderDeck();}
   if(mods.armed==='calm')wind=mods.savedWind;
   mods.armed=mods.armed===k?null:k;
   if(mods.armed==='calm'){mods.savedWind=wind;wind=0;}
@@ -2687,6 +2696,7 @@ function fire(){
   if(mods.armed&&shotNo===0){const k=mods.armed;mods.armed=null;if(k==='calm')wind=mods.savedWind;useItem(k);}
   const inf=gmFor('ammo',c);
   if(!(c.ammo[sel]>0)&&!inf)sel='coco';
+  if(mods.tele&&sel==='guava')sel='coco';
   const w=WEAPONS[sel];
   if(!inf)c.ammo[sel]--;
   setAnim(c,'throw');c.lastPower=power;charging=false;shotNo++;shotsLeft--;lastHit=false;
@@ -2773,14 +2783,14 @@ function explode(pr){
   }
   if(pr.thunder){
     SFX.thunder();parts.push({bolt:true,x,y:Math.min(surfaceY(Math.max(0,Math.min(W-1,x))),water),t:.45,seed:Math.random()});
-    for(const p of players){if(p.alive&&Math.abs(p.x-x)<28)hurt(p,22,pr);}
+    for(const p of players){if(p.alive&&!p.boss&&foeOf(pr.shooter,p)&&Math.hypot(p.x-x,p.y-y)<w.r+34){p.zapNext=true;texts.push({x:p.x,y:p.y-110,t:1.6,s:'手麻了！',c:'#fff36b'});}}
     if(!reduce)shake=12;
   }
   if(pr.tele){
     const s=pr.shooter,ox=s.x,oy=s.y;
     s.x=Math.max(14,Math.min(W-14,x));s.y=y;let k=0;while(!bodyFree(s.x,s.y)&&k++<80)s.y--;
-    if(s.y<water-8){s.vy=0;s.vx=0;texts.push({x:s.x,y:s.y-70,t:1.1,s:'瞬移',c:'#d8b6ff'});}
-    else{s.x=ox;s.y=oy;texts.push({x,y:water-40,t:1.1,s:'瞬移失敗',c:'#d8b6ff'});}
+    if(s.y<water-8){s.vy=0;s.vx=0;texts.push({x:s.x,y:s.y-70,t:1.1,s:'衝浪～',c:'#9fe0f0'});}
+    else{s.x=ox;s.y=oy;texts.push({x,y:water-40,t:1.1,s:'翻船了',c:'#9fe0f0'});}
   }
 }
 
@@ -2805,7 +2815,7 @@ function updateProjs(){
       for(let k=0;k<10;k++)parts.push({x:p.x,y:water,vx:(Math.random()-.5)*120,vy:-80-Math.random()*120,t:.6,c:'#bfe9f2',r:2.5});
       if(!p.w.build&&p.w.dmg>0&&!p.tele){p.y=water;for(let k=0;k<26;k++)parts.push({x:p.x+(Math.random()-.5)*p.w.r,y:water,vx:(Math.random()-.5)*200,vy:-140-Math.random()*220,t:.8,c:k%3?'#bfe9f2':'#fff',r:2+Math.random()*3});SFX.splash();explode(p);texts.push({x:p.x,y:water-46,t:1,s:'水花炸彈！',c:'#bfe9f2'});projs.splice(i,1);continue;}
       if(!p.w.build&&p.w.dmg>0)for(const q of players)if(q.swim&&q.alive&&Math.abs(q.x-p.x)<p.w.r+12){hurt(q,Math.round(p.w.dmg*.6),p);texts.push({x:q.x,y:q.y-80,t:1.2,s:'水花也會痛',c:'#bfe9f2'});}
-      texts.push({x:p.x,y:water-24,t:.9,s:p.tele?'瞬移失敗':['噗通','沒中啦～','餵魚了'][Math.floor(Math.random()*3)],c:'#bfe9f2'});SFX.splash();projs.splice(i,1);}
+      texts.push({x:p.x,y:water-24,t:.9,s:p.tele?'翻船了':['噗通','沒中啦～','餵魚了'][Math.floor(Math.random()*3)],c:'#bfe9f2'});SFX.splash();projs.splice(i,1);}
   }
 }
 
@@ -2904,9 +2914,10 @@ function afterResolve(){
     if(c.boss){cpu=bossPlan(c);banner={text:c.name+'暴怒！',sub:'再來一發！',t:1.3};}
     renderDeck();return;
   }
+  if(mods&&mods.healEnd&&c.alive){mods.healEnd=false;const g=Math.min(35,100-c.hp);c.hp+=g;c.healT=1.4;SFX.heal();texts.push({x:c.x,y:c.y-56,t:1.4,s:'+'+g,c:'#9ff08a'});for(let i=0;i<10;i++)parts.push({x:c.x,y:c.y-24,vx:(Math.random()-.5)*120,vy:-60-Math.random()*100,t:.7,c:'#b9e36a',r:2.5,star:true});}
   if(c.cpu)c.misses=lastHit?0:c.misses+1;
   if(c.ch==='cham')c.revealed=false;
-  {const tp0=turnPos;for(let k=0;k<order.length;k++){turnPos=(turnPos+1)%order.length;if(players[order[turnPos]].alive)break;}if(turnPos<=tp0)roundNo++;}
+  {const tp0=turnPos;for(let k=0;k<order.length;k++){turnPos=(turnPos+1)%order.length;if(players[order[turnPos]].alive)break;}newRound=turnPos<=tp0;if(newRound)roundNo++;}
   turn=order[turnPos];
   startTurn();
 }
@@ -3006,7 +3017,7 @@ function update(dt){
     if(own&&!gmFor('time',c))timeLeft-=dt;
     if(gmFor('stamina',c))c.stamina=100;
     if(charging){c._tk=(c._tk||0)-dt;if(c._tk<=0){c._tk=.07;SFX.tick(power);}}
-    if(own&&timeLeft<=0){if(charging)fire();else skipTurn();}
+    if(own&&timeLeft<=0){if(charging)fire();else{if(mods.armed==='heal'){mods.armed=null;useItem('heal');}skipTurn();}}
     else if(c.boss)bossUpdate(dt);
     else if(!own)netRemote(c,dt);
     else if(c.cpu||ON&&own&&c.uid&&c.uid!==ON.me){if(!cpu)cpu={stage:'think',t:.6};if(grounded(c))cpuUpdate(dt);}
@@ -3028,7 +3039,7 @@ function update(dt){
       const av=(input.up?1:0)-(input.down?1:0);
       if(av)c.angle=Math.max(-90,Math.min(90,c.angle+av*40*dt));
     }
-    if(own&&charging&&phase==='aim'){power+=pdir*62*dt;if(power>=100){power=100;pdir=-1;}if(power<=0){power=0;pdir=1;}}
+    if(own&&charging&&phase==='aim'){power+=pdir*62*(players[turn].zapNow?3.2:1)*dt;if(power>=100){power=100;pdir=-1;}if(power<=0){power=0;pdir=1;}}
     if(ON&&own&&!c.boss&&phase==='aim')netPose(c,dt);
   }
   acc+=dt;while(acc>=STEP){updateProjs();acc-=STEP;}
@@ -3263,6 +3274,7 @@ function drawShot(p){
   ctx.save();ctx.translate(p.x,p.y);
   if(p.power){ctx.fillStyle='rgba(255,90,40,.5)';ctx.beginPath();ctx.arc(0,0,14+Math.sin(p.age*30)*2,0,6.28);ctx.fill();}
   if(p.thunder){ctx.restore();drawIcon('thunder',p.x,p.y-30,22);ctx.save();ctx.translate(p.x,p.y);}
+  if(p.homing&&Math.random()<.3)parts.push({x:p.x,y:p.y,vx:0,vy:-20,t:.5,c:'#ff5d8f',r:2.6});
   if(p.homing){const fl=Math.sin(p.age*40)*.6;ctx.fillStyle='#fff';ctx.save();ctx.rotate(-.5-fl);ctx.beginPath();ctx.ellipse(-9,-6,7,3.5,0,0,6.28);ctx.fill();ctx.restore();ctx.save();ctx.rotate(.5+fl);ctx.beginPath();ctx.ellipse(9,-6,7,3.5,0,0,6.28);ctx.fill();ctx.restore();}
   if(p.freeze){ctx.rotate(p.age*6);ctx.restore();drawIcon('freeze',p.x,p.y,24);return;}
   ctx.rotate(p.homing?0:p.age*8);
@@ -3427,7 +3439,7 @@ function updateHud(){
   const n=Math.ceil(Math.abs(wind)/3.4);
   setT($('w-arrow'),wind?(wind<0?'◀'.repeat(n):'▶'.repeat(n)):'zzz');const wb=$('wind-box');setC(wb,'L',wind<0);setC(wb,'R',wind>0);setC(wb,'strong',Math.abs(wind)>=7);
   setT($('w-val'),wind?String(Math.abs(wind)):'');
-  const c=players[turn],sd=turnCount>=SD_TURN,ht=$('h-turn');
+  const c=players[turn],sd=roundNo>=SD_ROUND,ht=$('h-turn');
   let tl='';
   if(phase==='aim'){const sec=Math.ceil(Math.max(0,timeLeft)),inf=gmFor('time',c);tl=` · <b class="${!inf&&sec<=5?'warn':''}">${inf?'∞':sec}</b>`;}
   const tk='第 '+roundNo+' 回合'+tl;
@@ -3459,7 +3471,7 @@ function renderDeck(){
   wswEl.disabled=!human;
   itemsBar.innerHTML='';
   const owner=!c.cpu?c:(players.find(q=>!q.cpu&&q.alive)||players.find(q=>!q.cpu)||null);
-  if(owner&&owner.kit)owner.kit.forEach((k,i)=>{
+  if(owner&&owner.kit)owner.kit.slice().sort((a,b)=>IKEYS.indexOf(a)-IKEYS.indexOf(b)).forEach((k,i,arr)=>{if(i>0&&!!ISELF[k]!==!!ISELF[arr[i-1]]){const g=document.createElement('i');g.className='it-gap';itemsBar.appendChild(g);}
     const cnt=owner.items[k],b=document.createElement('button');b.className='it';b.id='it-'+k;
     const mineT=owner===c;b.setAttribute('aria-pressed',mineT&&(mods.armed===k||mods.used===k));
     b.disabled=!human||!mineT||!!mods.used&&mods.used!==k||shotNo>0||(!(cnt>0)&&!inf&&mods.used!==k);
@@ -3473,7 +3485,7 @@ function renderDeck(){
 function cycleWeapon(){
   const c=players[turn];if(!canHuman()||charging)return;
   fixInf(c);const inf=gmFor('ammo',c),i=WKEYS.indexOf(sel);
-  for(let j=1;j<=WKEYS.length;j++){const k=WKEYS[(i+j)%WKEYS.length];if(c.ammo[k]>0||inf){sel=k;break;}}
+  for(let j=1;j<=WKEYS.length;j++){const k=WKEYS[(i+j)%WKEYS.length];if(k==='guava'&&mods.armed==='tele')continue;if(c.ammo[k]>0||inf){sel=k;break;}}
   SFX.click();renderDeck();tipNear(wswEl,`<b>${WEAPONS[sel].name}</b> ${WDESC[sel]}`,'left');
 }
 function startCharge(){if(canHuman()&&!charging&&grounded(players[turn])){charging=true;power=0;pdir=1;fireBtn.classList.add('on');wswEl.classList.add('cancel');}}
@@ -3550,7 +3562,7 @@ function saveKit(k){try{localStorage.setItem('diudiu-kit',JSON.stringify(k));}ca
 let pickTip=null;
 function drawPick(){
   pickGrid.innerHTML='';
-  IKEYS.forEach(k=>{
+  IKEYS.forEach((k,ix)=>{if(ix===0||!!ISELF[k]!==!!ISELF[IKEYS[ix-1]]){if(ix)pickGrid.appendChild(Object.assign(document.createElement('i'),{className:'pk-br'}));const t=document.createElement('span');t.className='pk-grp '+(ISELF[k]?'self':'boost');t.innerHTML=ISELF[k]?'<b>自己用</b>':'<b>加強丟擲物</b>';t.prepend(ISELF[k]?(()=>{const cv=document.createElement('canvas');cv.width=cv.height=96;const g=cv.getContext('2d');try{drawChar(g,(picking&&picking.ch)||'pine',48,88,1,rig('idle',0,0,{aim:.5,active:false,power:0}),1.9);}catch(_){}return cv;})():iconCanvas('coco',34));pickGrid.appendChild(t);}
     const b=document.createElement('button');b.className='pk';b.id='pk-'+k;b.setAttribute('aria-pressed',chosen.includes(k));
     b.innerHTML=`<span class="pk-ic"></span><b>${ITEMS[k].name}</b><i class="pk-n">×${ITEMS[k].n}</i><span class="pk-f">${ITEMFUN[k]}</span><em class="pk-stamp">帶走</em>`;b.querySelector('.pk-ic').appendChild(iconCanvas(k,52));
     b.onclick=()=>{if(chosen.includes(k))chosen=chosen.filter(x=>x!==k);else{chosen.push(k);if(chosen.length>3)chosen.shift();}pickTip=k;drawPick();SFX.click();};
@@ -4298,7 +4310,7 @@ function netPump(){
     }finally{NETMUTE--;}
   }
 }
-const SNAPK=['x','y','hp','alive','frozen','inked','paraNext','shield','revealed','swim','rescued','shellType','shellOn','spikeOn','items','ammo','misses','face','safeX','safeY'];
+const SNAPK=['x','y','hp','alive','frozen','inked','paraNext','shield','revealed','swim','rescued','shellType','shellOn','spikeOn','items','ammo','misses','face','safeX','safeY','zapNext'];
 function netSnap(){return{p:players.map(p=>{const o={};SNAPK.forEach(k=>{if(p[k]!==undefined&&p[k]!==null)o[k]=typeof p[k]==='number'?+p[k].toFixed(2):p[k];});return o;}),water,cv:ON.carveLog.slice(-600),tp:turnPos,tc:turnCount,rn:roundNo,sl:shotsLeft};}
 function netApply(s){
   if(!s)return;ON.noLog=true;
@@ -4366,7 +4378,7 @@ $('mn-byecrowd').innerHTML=['pine','octo','shark','monkey','jelly'].map(k=>`<can
 $('mn-crowd').innerHTML=CKEYS.map((k,i)=>`<canvas width="110" height="110" data-ch="${k}" data-id="mc-${k}"></canvas>`).join('');
 stageEl.addEventListener('pointerdown',e=>{if(intro&&menuEl.hidden&&sysEl.hidden&&setupEl.hidden&&e.target.closest('#cv,.hud,.stage>canvas')!==null)endIntro();},true);
 let previewAnim='idle';
-(()=>{const box=$('ii-grid');IKEYS.forEach((k,i)=>{const d=document.createElement('div');d.className='ii';d.dataset.k=k;
+(()=>{const box=$('ii-grid');IKEYS.forEach((k,i)=>{if(i===0||!!ISELF[k]!==!!ISELF[IKEYS[i-1]]){const h=document.createElement('h4');h.className='ii-grp';h.textContent=ISELF[k]?'自己用':'加強丟擲物（這回合丟的每一顆都有效）';box.appendChild(h);}const d=document.createElement('div');d.className='ii';d.dataset.k=k;
   d.innerHTML=`<div class="ii-ic"></div><h3>${ITEMS[k].name}<i>×${ITEMS[k].n}</i></h3><p class="ii-fun">${ITEMFUN[k]}</p><p class="ii-do">${ITEMS[k].desc}</p>`;
   d.querySelector('.ii-ic').appendChild(iconCanvas(k,64));box.appendChild(d);});})();
 (()=>{const box=$('wp-grid'),mx=(k)=>Math.max(...WKEYS.map(x=>WEAPONS[x][k]));
