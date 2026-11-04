@@ -2672,6 +2672,7 @@ function build(cx,cy,r){
 
 /* ---- character physics ---- */
 const bodyFree=(x,y)=>{if(isSolid(x,y-2)||isSolid(x,y-14)||isSolid(x,y-26))return false;for(const dy of [10,22])for(const dx of [-5,5])if(isSolid(x+dx,y-dy))return false;return true;};
+const thickAt=(x,y)=>isSolid(x,y)&&(isSolid(x,y+3)||isSolid(x,y-3)); // hair-thin slivers don't shove anyone up (they used to trap a falling player)
 const footOK=(x,y)=>isSolid(x,y)&&isSolid(x,y+3); // a hair-thin leftover sliver can't hold anyone up
 const onGround=p=>footOK(p.x-5,p.y+1)||footOK(p.x,p.y+1)||footOK(p.x+5,p.y+1);
 const grounded=p=>p.vy===0&&p.vx===0&&(onGround(p)||!!p.swim);
@@ -3066,7 +3067,7 @@ function settlePlayers(dt){
   for(const p of players){
     if(!p.alive)continue;
     if(p.fixed){if(p.hp<=0){p.alive=false;}continue;}
-    let k=0;while((isSolid(p.x,p.y)||isSolid(p.x,p.y-10))&&k++<60)p.y--;
+    let k=0;while((thickAt(p.x,p.y)||thickAt(p.x,p.y-10))&&k++<60)p.y--;
     if(p.vx){const nx=p.x+p.vx*dt;if(nx>10&&nx<W-10&&bodyFree(nx,p.y))p.x=nx;else p.vx=0;}
     if(p.swim&&p.y<water+3)p.swim=false;
     if(p.ch==='shark'&&p.y>=water+6&&p.vy>=0){p.y=water+10;p.vy=0;p.vx=Math.abs(p.vx)<8?0:p.vx*.9;if(!p.swim){p.swim=true;skill(p);SFX.splash();for(let k=0;k<12;k++)parts.push({x:p.x,y:water,vx:(Math.random()-.5)*150,vy:-90-Math.random()*120,t:.6,c:'#bfe9f2',r:2.5});}}
