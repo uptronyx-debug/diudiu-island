@@ -1222,7 +1222,6 @@ ol.road li{border-color:#d9b98a}
         <div class="mid"><div class="wind" id="wind-box"><i>風</i><span id="w-arrow"></span><b id="w-val"></b></div><small id="h-turn">第 1 回合</small></div>
         <div class="plist r" id="pl-b"></div>
       </div>
-      <div class="gmtag" id="h-gm" hidden>管理員模式</div>
       <div class="items-bar ctrl" id="items-bar" aria-label="道具"></div>
       <div class="toast off" id="toast" role="status"></div>
 
@@ -1349,98 +1348,12 @@ ol.road li{border-color:#d9b98a}
     <div class="roster-grid" id="roster" data-pane="ch"></div>
     <div class="roster-head ii-head" data-pane="it" hidden><div><p>開場看完對手是誰，再撿 3 樣帶進場。</p></div></div>
     <div class="ii-grid" id="ii-grid" data-pane="it" hidden></div>
-    <div class="roster-head ii-head" data-pane="wp" hidden><div><p>按「丟擲物」那顆按鈕切換，椰子丟不完，其他有次數。</p></div></div>
+    <div class="roster-head ii-head" data-pane="wp" hidden><div><p>點右邊的丟擲物圖示切換，椰子丟不完，其他有次數。</p></div></div>
     <div class="ii-grid wp-grid" id="wp-grid" data-pane="wp" hidden></div>
     </div>
   </section>
 
-  <section class="dev" id="dev">
-    <button class="dev-head" id="dev-btn" aria-expanded="false"><span class="lk" aria-hidden="true"></span>開發人員<small id="dev-state">已上鎖</small></button>
-    <form class="dev-lock" id="dev-lock" hidden autocomplete="off">
-      <label for="dev-pw">輸入開發人員密碼</label>
-      <input id="dev-pw" type="password" inputmode="numeric" maxlength="8" placeholder="••••">
-      <button class="ghost2" type="submit">解鎖</button>
-      <span class="dev-err" id="dev-err" role="status"></span>
-    </form>
-    <div class="dev-body" id="dev-body" hidden>
-      <div class="dev-bar"><button class="ghost" id="gm-toggle" aria-pressed="false">管理員模式</button><button class="ghost" id="dev-relock">鎖回去</button></div>
-  <div class="gm" id="gm" hidden>
-    <div class="gm-head"><b>管理員模式</b><span>測試用，只作用在玩家身上，電腦不受影響。關掉這個面板就恢復正常規則。</span></div>
-    <div class="gm-grid">
-      <label><input type="checkbox" id="gm-stamina" checked> 無限體力</label>
-      <label><input type="checkbox" id="gm-ammo" checked> 無限道具與丟擲物</label>
-      <label><input type="checkbox" id="gm-time" checked> 時間不倒數</label>
-      <label><input type="checkbox" id="gm-god"> 玩家無敵</label>
-      <label><input type="checkbox" id="gm-cpu"> 電腦不行動</label>
-      <label><input type="checkbox" id="gm-sd"> 關閉水位上漲</label>
-      <label><input type="checkbox" id="gm-proc"> 被動技能必定觸發</label>
-    </div>
-    <div class="gm-row">
-      <label for="gm-wind">風向</label>
-      <select id="gm-wind"><option value="rand">每回合隨機</option></select>
-      <button class="ghost" id="gm-foe">敵人剩 10 血</button>
-      <button class="ghost" id="gm-full">全員補滿血</button>
-      <button class="ghost" id="gm-map">換新地圖</button>
-    </div>
-  </div>
 
-    <div class="bal">
-      <h3>被動技能平衡</h3>
-      <p>估算基準（以 1 對 1 計）：一場約 6 個自己的回合，每人大約承受 100 點傷害、打出 100 點傷害。每個被動換算成「一場多賺多少血量」，都抓在 20～25 點左右，風格不同但總值接近。數值都可以再調。</p>
-      <div class="bal-wrap"><table>
-        <thead><tr><th>角色</th><th>被動</th><th>數值</th><th>一場約等於</th><th>弱點</th></tr></thead>
-        <tbody>
-          <tr><td>慢慢<span class="tag-k">耐久</span></td><td>龜氣滿滿<br><small style="color:var(--muted)">慢慢回血</small></td><td class="num">每回合 +10</td><td>+20～25 血（滿血時不回）</td><td>走路多耗 25% 體力，不好躲</td></tr>
-          <tr><td>大嘴<span class="tag-k">耐久</span></td><td>一吞二淨<br><small style="color:var(--muted)">一口吞</small></td><td class="num">20% 免傷</td><td>少受約 20 點傷害</td><td>靠運氣，可能整場不觸發</td></tr>
-          <tr><td>夾夾<span class="tag-k">輸出</span></td><td>螯夜爆擊<br><small style="color:var(--muted)">大螯爆擊</small></td><td class="num">30% × 1.6</td><td>多打約 18～20 點</td><td>沒打中就沒有效果</td></tr>
-          <tr><td>鼓鼓<span class="tag-k">反擊</span></td><td>以刺還刺<br><small style="color:var(--muted)">膨脹反刺</small></td><td class="num">反彈 25%</td><td>多打約 25 點</td><td>要先挨打才會發動</td></tr>
-          <tr><td>八八<span class="tag-k">控制</span></td><td>墨名其妙<br><small style="color:var(--muted)">墨汁</small></td><td class="num">命中時 30%</td><td>對手約少中 1 發（≈20 點）</td><td>沒打中就沒有效果</td></tr>
-          <tr><td>啵啵<span class="tag-k">機動</span></td><td>旺來直升機<br><small style="color:var(--muted)">螺旋槳</small></td><td class="num">落海救回 1 次</td><td>少死一次，平常靠走位</td><td>數值最不直接，要會跑位</td></tr>
-          <tr><td>嘰嘰<span class="tag-k">搗蛋</span></td><td>順手牽猴<br><small style="color:var(--muted)">偷道具</small></td><td class="num">命中時 40%</td><td>對方少一個、自己多一個道具（≈20 點）</td><td>對方道具用完就偷不到</td></tr>
-          <tr><td>嘟嘟<span class="tag-k">控制</span></td><td>頂呱呱<br><small style="color:var(--muted)">頂飛</small></td><td class="num">命中必定擊退</td><td>傷害不變，但很會把人推下海</td><td>地形平坦時效果小</td></tr>
-          <tr><td>咪咪<span class="tag-k">隱匿</span></td><td>無影無龍<br><small style="color:var(--muted)">全程隱形</small></td><td class="num">敵人看不到</td><td>少被瞄準（≈20～25 點）</td><td>被打中就現形一輪；丟東西會暴露位置</td></tr>
-          <tr><td>咬咬<span class="tag-k">地形</span></td><td>如鯊得水<br><small style="color:var(--muted)">海裡游泳</small></td><td class="num">落海不死</td><td>躲水裡、後期水位上漲也不怕（≈20～25 點）</td><td>海面水花會打到牠；從水裡丟的角度很低</td></tr>
-          <tr><td>宅宅<span class="tag-k">隨機</span></td><td>借殼上市<br><small style="color:var(--muted)">每回合換殼</small></td><td class="num">三選一</td><td>平均約 20 點（看運氣）</td><td>抽到什麼殼不能選</td></tr>
-          <tr><td>啵蕾<span class="tag-k">控制</span></td><td>麻麻好麻<br><small style="color:var(--muted)">麻痺</small></td><td class="num">命中時 35%</td><td>對手一回合不能走位（≈15～20 點）</td><td>沒打中就沒效果</td></tr>
-        </tbody>
-      </table></div>
-  <section class="notes">
-    <h2>改成線上對戰要怎麼做</h2>
-    <p>這類遊戲是回合制，所以連線比即時動作遊戲簡單很多：玩家只送「指令」（移動、用道具、角度、力道），伺服器用同一套物理算出結果再廣播給房間裡每個人。原型的物理已經用固定時間步長和種子亂數寫，搬到伺服器可以直接共用。</p>
-
-    <div class="flow" aria-label="連線架構">
-      <div class="node"><b>玩家 A 瀏覽器</b>Canvas 畫面、輸入、播放動畫</div>
-      <div class="arrow">⇄</div>
-      <div class="node srv"><b>遊戲伺服器（房間）</b>Node.js + WebSocket<br>回合計時、風向、道具效果、物理判定、扣血</div>
-      <div class="arrow">⇄</div>
-      <div class="node"><b>玩家 B 瀏覽器</b>收到同一份結果，畫面一致</div>
-    </div>
-
-<pre>// 用戶端 → 伺服器（只送意圖，不送結果）
-{ t:"move",  dx:-12 }      { t:"jump" }      { t:"dig" }
-{ t:"item",  key:"freeze" }
-{ t:"fire",  angle:52, power:71, weapon:"durian" }
-
-// 伺服器 → 房間所有人
-{ t:"turn",   player:"A", wind:-6, water:506, deadline:1730541600 }
-{ t:"shot",   by:"A", angle:52, power:71, weapon:"durian", mods:["freeze"], seed:88412 }
-{ t:"result", hp:{A:100,B:54}, craters:[[611,302,50]], status:{B:["frozen"]}, next:"B" }</pre>
-
-    <div class="grid2">
-      <div class="card"><h3>伺服器權威</h3><p>傷害、道具效果、地形破壞、誰落海都由伺服器算。用戶端改程式也改不了血量或道具數量，計時也以伺服器為準。</p></div>
-      <div class="card"><h3>決定性物理</h3><p>固定步長 1/120 秒、同一個亂數種子，兩邊算出的拋物線完全一樣，只需傳指令就能重播，流量很小。</p></div>
-      <div class="card"><h3>技術選型</h3><p>伺服器用 Node.js 搭 Socket.IO 或 Colyseus（內建房間與狀態同步）；前端可沿用原生 Canvas，之後要更多特效再換 Phaser。</p></div>
-      <div class="card"><h3>房間流程</h3><p>大廳 → 開房或快速配對 → 選角色、帶道具（有格數上限） → 對戰 → 結算經驗與金幣。斷線時保留座位 30 秒。</p></div>
-    </div>
-
-    <h3>開發順序</h3>
-    <ol class="road">
-      <li><em>階段 1</em><span>單機原型：道具、跳躍挖地、手感與平衡（就是上面這個）</span></li>
-      <li><em>階段 2</em><span>兩人房間連線：WebSocket、回合同步、斷線重連</span></li>
-      <li><em>階段 3</em><span>帳號、等級、金幣、道具商店與角色造型</span></li>
-      <li><em>階段 4</em><span>2v2、4v4 團隊戰、角色專屬技能、更多地圖、排行榜</span></li>
-    </ol>
-  </section>
   <section class="notes">
     <h2>連線協定設計（房主權威）</h2>
     <p>大廳目前用 <code>MockNet</code> 假裝有朋友加入，介面和真連線用同一組呼叫：<code>create / join / send / on</code>。接上真連線時只換掉這一層。</p>
@@ -1516,7 +1429,7 @@ ol.road li{border-color:#d9b98a}
 
 <script>
 (()=>{
-let W=960;const VW=960,H=540,G=420,VMAX=780,WIND_K=4,HIT_R=24,STEP=1/120,TURN_T=25,SD_ROUND=6,WATER0=H-34;
+let W=960;const VW=960,H=540,G=420,VMAX=780,WIND_K=4,HIT_R=24,STEP=1/120,TURN_T=25,SD_ROUND=4,WATER0=H-34;
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
 const stageEl=document.getElementById('stage'),gameEl=document.getElementById('game');
@@ -1561,10 +1474,10 @@ const IKEYS=Object.keys(ITEMS);
 const DIFF={easy:{pw:10,ang:7,wind:.6,learn:.12,item:.35},normal:{pw:6,ang:4,wind:.35,learn:.2,item:.55},hard:{pw:2.5,ang:1.5,wind:.1,learn:.25,item:.75}};
 
 let mode='cpu',diff='normal',assist='short',rng,players,projs,parts,texts,turn,wind,timeLeft,phase,settleT,power,pdir,charging,sel,banner,shake,cpu,clouds,acc=0;
-let roundNo=1,newRound=false,water=WATER0,turnCount=0,mods,shotsLeft,shotNo,lastHit=false;
+let roundNo=1,newRound=false,seaNoted=false,water=WATER0,turnCount=0,mods,shotsLeft,shotNo,lastHit=false;
 const input={left:false,right:false,up:false,down:false};
 let gmOn=false;
-const gm=k=>gmOn&&!!document.getElementById('gm-'+k)?.checked;
+const gm=k=>false; // dev/admin toggles removed
 const gmFor=(k,p)=>gm(k)&&p&&!p.cpu;
 
 /* ---- characters: rig + six original designs ---- */
@@ -1963,13 +1876,13 @@ const CHARS={
   cham:   {name:'咪咪',title:'變色龍',desc:'兩隻眼睛各轉各的，平常根本找不到牠在哪。',draw:drawCham,head:[9,-25]},
   jelly:  {name:'啵蕾',title:'水母',desc:'半透明的果凍頭，身邊一直劈哩啪啦冒電光，摸到會麻。',draw:drawJelly,head:[3,-33]},
   shark:  {name:'咬咬',title:'鯊魚',desc:'圓滾滾的小鯊魚，只有兩顆小虎牙，最喜歡泡在海裡。',draw:drawShark,head:[5,-37]},
-  hermit: {name:'宅宅',title:'寄居蟹',desc:'每天出門都要換一個殼，看心情背刺殼、鐵殼還是彈簧殼。',draw:drawHermit,head:[6,-30]}
+  hermit: {name:'宅宅',title:'寄居蟹',desc:'每回合都要換一個殼，看心情背刺殼、硬殼還是彈簧殼。',draw:drawHermit,head:[6,-30]}
 };
 const PASSIVE={
   pine:   {name:'旺來直升機',desc:'跳得更高、往下掉時葉子會轉起來慢慢滑翔，走路省 20% 體力；每場第一次掉進海裡會被葉子拉回岸上（扣 15 血）。'},
   turtle: {name:'龜氣滿滿',desc:'每回合開始回復 10 點血；龜殼很重，走路多耗 25% 體力。'},
   octo:   {name:'墨名其妙',desc:'打中對手時 30% 機率噴墨，對手下回合畫面變黑、看不到輔助線。'},
-  crab:   {name:'螯夜爆擊',desc:'每發 30% 機率爆擊，傷害 ×1.6。'},
+  crab:   {name:'螯夜爆擊',desc:'每次丟擲 30% 機率爆擊，傷害 ×1.6（三連芭樂三顆一起算）。'},
   puffer: {name:'以刺還刺',desc:'被打中時鼓成刺球，把 25% 傷害反彈給丟的人。'},
   pelican:{name:'一吞二淨',desc:'敵人丟過來的東西有 20% 機率被整顆吞掉，完全不受傷，地形也不會被炸。'},
   monkey: {name:'順手牽猴',desc:'打中敵人時 40% 機率偷走對方一個道具，直接變成自己的。'},
@@ -1986,7 +1899,7 @@ const PUN={pine:'旺來＝鳳梨，好運直接起飛',turtle:'元氣滿滿？�
 const proc=ch=>gm('proc')||rng()<ch;
 const cyOf=pl=>pl.cy||14,hitRof=pl=>pl.hr||HIT_R;
 const OUCH=['哎呦喂！','我的臉！','痛痛痛','嗚哇～','好痛喔','腰閃到了','要長包了','靠夭～','我要回家'];
-const ITEMFUN={heal:'一碗下肚，龜氣滿滿（不是真的海龜啦）',double:'老闆說今天椰子買一送一',power:'小辣椒大火氣，辣到手抖丟更痛',freeze:'請對手吃一碗，吃完直接腦凍',thunder:'雷公伯今天心情不好，劈下去手麻三天',tele:'浪來了！人跟著丟出去的東西衝過去',homing:'這顆椰子跟定你了，跑不掉的',calm:'風神放颱風假，今天不上班',shield:'鴨鴨說：交給我，呱'};
+const ITEMFUN={heal:'一碗熱湯下肚，整個人活過來',double:'老闆說今天椰子買一送一',power:'小辣椒大火氣，辣到手抖丟更痛',freeze:'請對手吃一碗，吃完直接腦凍',thunder:'雷公伯今天心情不好，劈下去手麻三天',tele:'浪來了！人跟著丟出去的東西衝過去',homing:'這顆椰子跟定你了，跑不掉的',calm:'風神放颱風假，今天不上班',shield:'鴨鴨說：交給我，呱'};
 const TAUNT=['換你表演了','別手滑喔','丟下去就對了','瞄準一點啦','大家都在看你','今天手感如何？'];
 function viewerTeam(){const c=players&&players[turn];if(c&&!c.cpu)return c.team;const h=players&&players.find(q=>!q.cpu);return h?h.team:null;}
 const foeOf=(a,b)=>!!a&&!!b&&a!==b&&a.team!==b.team;
@@ -2514,7 +2427,7 @@ function newGame(){
     pos=new Array(n);seq.forEach((si,k)=>pos[si]=k);
   }else if(!boss){for(let i=n-1;i>0;i--){const k=Math.floor(rng()*(i+1));[pos[i],pos[k]]=[pos[k],pos[i]];}}
   mapKey=setup.map&&MAPS[setup.map]?setup.map:MKEYS[Math.floor(rng()*MKEYS.length)];MAP=MAPS[mapKey];weather=[];
-  genTerrain(rng,boss?[...xs,bx-80,bx-55,bx-30,bx,bx+30,bx+55,bx+80]:xs);water=WATER0;turnCount=0;roundNo=1;deaths=[];bossMarks=[];
+  genTerrain(rng,boss?[...xs,bx-80,bx-55,bx-30,bx,bx+30,bx+55,bx+80]:xs);water=WATER0;turnCount=0;roundNo=1;seaNoted=false;deaths=[];bossMarks=[];
   players=sl.map((s,i)=>{const x=xs[pos[i]],p=mk(s.ch,x,x<W/2?1:-1,s.cpu);
     p.slot=i;p.team=boss?0:team?s.team:i;p.color=boss?PCOL[i]:team?TCOL[s.team]:PCOL[i];return p;});
   players.forEach(p=>{const same=players.filter(q=>q.ch===p.ch);p.name=CHARS[p.ch].name+(same.length>1?(same.indexOf(p)+1):'');
@@ -2630,9 +2543,9 @@ function startTurn(){
   turnCount++;if(ON)rng=mulberry32((ON.seed^Math.imul(turnCount,2654435761))>>>0);
   if(ON&&ON.isHost&&c&&c.uid&&c.uid!==ON.me&&c.remote&&seatAway(c.uid))setTimeout(()=>{if(ON&&players[turn]===c)netTakeover(c);},50);
   let note='';
-  if(roundNo>=SD_ROUND&&newRound&&!gm('sd')){water-=26;note='海水又漲了～快往高處跑';waveFX=1.6;SFX.splash();texts.push({x:cam.x,y:water-60,t:2,t0:2,s:'海水漲上來啦～',c:'#fff',big:true,stroke:'#2a8aa6'});}
+  if(roundNo>=SD_ROUND&&turnCount>1&&!gm('sd')){water-=8;SFX.splash();waveFX=.8;if(!seaNoted){seaNoted=true;note='海水又漲了～快往高處跑';waveFX=1.6;SFX.splash();texts.push({x:cam.x,y:water-60,t:2,t0:2,s:'海水漲上來啦～',c:'#fff',big:true,stroke:'#2a8aa6'});}}
   wind=Math.round((rng()*2-1)*10);
-  if(gmOn&&document.getElementById('gm-wind').value!=='rand')wind=+document.getElementById('gm-wind').value;
+  
   c.shield=false;c.zapNow=!!c.zapNext;c.zapNext=false;if(c.zapNow){texts.push({x:c.x,y:c.y-110,t:1.8,t0:1.8,s:'手麻麻～力道失控',c:'#fff36b',big:true,stroke:'#6a5a00'});SFX.zap();}
   mods={used:null,armed:null};shotsLeft=1;shotNo=0;
   charging=false;power=0;pdir=1;c.stamina=100;c.stuckT=0;c.stuckNote=false;
@@ -2767,8 +2680,6 @@ function explode(pr){
   if(w.build)SFX.poof();else SFX.boom(w.r);
   if(w.build){
     build(x,y-w.r*.35,w.r);
-    {const sh=pr.shooter;if(sh)for(const p of players){if(!p.alive||!foeOf(sh,p)||Math.hypot(p.x-x,p.y-cyOf(p)-y)>w.r+22)continue;atkPassives(sh,p,pr);
-      if(sh.ch==='seal'&&!p.fixed&&!gmFor('god',p)){SFX.whistleUp();const dir=Math.sign(p.x-x)||sh.face;p.vx=dir*175;p.vy=-215;if(!pr.sealDone){pr.sealDone=true;skill(sh,p.x,p.y);}}}}
     for(let i=0;i<16;i++){const a=Math.random()*6.28,s=40+Math.random()*120;parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-100,t:.6,c:'#c98a5a',r:3});}
   }else{
     carve(x,y,w.r);
@@ -3455,7 +3366,7 @@ function updateHud(){
   const tk='第 '+roundNo+' 回合'+tl;
   if(ht._k!==tk){ht._k=tk;ht.innerHTML=tk;}
   
-  $('h-gm').hidden=!gmOn;
+
   const pw=Math.round(power);if(fireBtn._pw!==pw){fireBtn._pw=pw;fireBtn.style.setProperty('--pw',pw);}
   const lm=$('last-mark');lm.hidden=c.lastPower==null||c.cpu;if(c.lastPower!=null){const v=Math.round(c.lastPower);if(lm._v!==v){lm._v=v;fireBtn.style.setProperty('--lp',v);}}
   const st=Math.round(c.cpu?0:c.stamina);if(joyEl._st!==st){joyEl._st=st;joyEl.style.setProperty('--stp',st);}
@@ -3710,25 +3621,6 @@ function netBackRoom(){netStop();LB.inMatch=false;netOverBtns();$('over').hidden
 function netQuit(){netStop();LB.inMatch=false;netOverBtns();if(LB.net){LB.net.leave();LB.net=null;LB.room=null;}}
 document.querySelectorAll('#diff button').forEach(b=>b.onclick=()=>{diff=b.dataset.d;document.querySelectorAll('#diff button').forEach(x=>x.setAttribute('aria-pressed',x===b));});
 
-const gmPanel=document.getElementById('gm'),gmBtn=document.getElementById('gm-toggle'),gmWind=document.getElementById('gm-wind');
-for(let v=-10;v<=10;v++){const o=document.createElement('option');o.value=v;o.textContent=v===0?'無風 (0)':(v<0?'往左 ':'往右 ')+Math.abs(v);gmWind.appendChild(o);}
-gmBtn.onclick=()=>{gmOn=!gmOn;gmPanel.hidden=!gmOn;gmBtn.setAttribute('aria-pressed',gmOn);renderDeck();};
-gmPanel.addEventListener('change',e=>{if(e.target===gmWind&&gmWind.value!=='rand'&&phase==='aim'&&!mods.used){wind=+gmWind.value;if(mods.armed==='calm'){mods.savedWind=wind;wind=0;}}renderDeck();});
-document.getElementById('gm-foe').onclick=()=>{const me=players[turn];players.forEach(p=>{if(p.alive&&foeOf(me,p))p.hp=Math.min(p.hp,10);});};
-document.getElementById('gm-full').onclick=()=>{players.forEach(p=>{if(p.alive)p.hp=100;});};
-document.getElementById('gm-map').onclick=newGame;
-
-
-/* ---- developer section, password-locked (client side only: hides from casual testers, not real security) ---- */
-const DEV_PW='9487',devEl=$('dev'),devBtn=$('dev-btn'),devLock=$('dev-lock'),devBody=$('dev-body');
-let devOpen=false;try{devOpen=sessionStorage.getItem('diudiu-dev')==='1';}catch(_){}
-function devRender(){devEl.classList.toggle('open',devOpen);devBody.hidden=!devOpen;$('dev-state').textContent=devOpen?'已解鎖':'已上鎖';devBtn.setAttribute('aria-expanded',devOpen||!devLock.hidden);if(devOpen)devLock.hidden=true;}
-devBtn.onclick=()=>{if(devOpen){devBody.hidden=!devBody.hidden;devBtn.setAttribute('aria-expanded',!devBody.hidden);return;}devLock.hidden=!devLock.hidden;devBtn.setAttribute('aria-expanded',!devLock.hidden);if(!devLock.hidden)$('dev-pw').focus();};
-devLock.onsubmit=e=>{e.preventDefault();const v=$('dev-pw').value;$('dev-pw').value='';
-  if(v===DEV_PW){devOpen=true;try{sessionStorage.setItem('diudiu-dev','1');}catch(_){}$('dev-err').textContent='';devRender();}
-  else{$('dev-err').textContent=['密碼錯了，你是不是朋友派來的？','再錯就把你丟進海裡','這裡沒有東西，真的'][Math.floor(Math.random()*3)];devLock.classList.remove('bad');void devLock.offsetWidth;devLock.classList.add('bad');}};
-$('dev-relock').onclick=()=>{devOpen=false;try{sessionStorage.removeItem('diudiu-dev');}catch(_){}if(gmOn){gmOn=false;gmPanel.hidden=true;gmBtn.setAttribute('aria-pressed',false);renderDeck();}devRender();};
-devRender();
 /* ---- online lobby (transport-agnostic; MockNet stands in for friends until a real connection is wired) ---- */
 const LB={open:false,screen:'home',me:null,room:null,net:null,timers:[],bubbles:{},anim:{},lastSec:-1};
 const PICK_SEC=300,COUNT_SEC=5;
@@ -4396,7 +4288,7 @@ let previewAnim='idle';
   WKEYS.forEach(k=>{const w=WEAPONS[k],d=document.createElement('div');d.className='ii';d.dataset.k=k;
     const wind=w.windMul===0?'完全不歪':w.windMul<1?'有點歪':w.windMul>1?'超級歪':'會歪';
     d.innerHTML=`<div class="ii-ic"></div><h3>${w.name}<i>${w.uses===Infinity?'∞':'×'+w.uses}</i></h3><p class="ii-fun">${WFUN[k]}</p>
-      <div class="wstats">${bar('傷害',w.dmg,mx('dmg'),w.build?'不痛':w.dmg+(w.spread?'×3':''))}${bar('爆炸',w.r,mx('r'),w.r)}${bar('被風吹',w.windMul,1.2,wind,'wind')}</div>
+      <div class="wstats">${bar('傷害',w.dmg,mx('dmg'),w.build?'不痛':w.dmg+(w.spread?'×3':''))}${bar('爆炸',w.r,mx('r'),w.build?'—':w.r>=56?'超大':w.r>=40?'中':'小')}${bar('被風吹',w.windMul,1.2,wind,'wind')}</div>
       <p class="ii-do">${WDESC[k]}</p>`;
     d.querySelector('.ii-ic').appendChild(iconCanvas(k,64));box.appendChild(d);});})();
 document.querySelectorAll('#pg-tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#pg-tabs button').forEach(x=>x.setAttribute('aria-selected',x===b));
@@ -4404,7 +4296,7 @@ document.querySelectorAll('#pg-tabs button').forEach(b=>b.onclick=()=>{document.
 const rosterEl=$('roster'),rcs=[];
 CKEYS.forEach(k=>{
   const d=document.createElement('div');d.className='rc';
-  d.innerHTML=`<canvas width="400" height="260" aria-label="${CHARS[k].name}動畫預覽"></canvas><h3>${CHARS[k].name}<small>${CHARS[k].title}</small></h3><p>${CHARS[k].desc}</p><p class="pv"><b>被動・${PASSIVE[k].name}</b>${PASSIVE[k].desc}</p><div class="pick"><button data-p="0">設為我的角色</button></div>`;
+  d.innerHTML=`<canvas width="400" height="260" aria-label="${CHARS[k].name}動畫預覽"></canvas><h3>${CHARS[k].name}</h3><p>${CHARS[k].desc}</p><p class="pv"><b>被動・${PASSIVE[k].name}</b>${PASSIVE[k].desc}</p>`;
   rosterEl.appendChild(d);
   const cvs=d.querySelector('canvas');
   d.querySelectorAll('.pick button').forEach(b=>b.onclick=()=>{
