@@ -2299,6 +2299,7 @@ function surfaceY(x){for(let y=0;y<H;y++)if(isSolid(x,y))return y;return H;}
 
 /* ---- maps: shape + palette ---- */
 const MAPS={
+  hsinchu:{name:'新竹 | 魚鱗天梯',sky:['#2e2a5e','#e8706a','#ffc07a'],sun:'rgba(0,0,0,0)',hills:'rgba(0,0,0,0)',ground:['#c9a77a','#a88658','#7a603e'],stripe:'rgba(80,50,30,.14)',speck:['rgba(80,50,30,.2)','rgba(255,220,180,.3)'],grass:['#fff0dc','#ffd6a8'],under:'#b89466',shade:'rgba(60,30,40,.45)',water:'rgba(70,70,120,.88)'},
   tamsui:{name:'新北 | 淡海大橋',sky:['#3a4a8a','#f0906a','#ffd59a'],sun:'#ffb36a',hills:'rgba(0,0,0,0)',ground:['#9cb86a','#7a9a50','#56703a'],stripe:'rgba(40,60,20,.16)',speck:['rgba(40,60,20,.2)','rgba(255,250,220,.3)'],grass:['#6ab04a','#9ad06a'],under:'#86a85a',shade:'rgba(40,40,50,.45)',water:'rgba(50,100,140,.9)'},
   kaohsiung:{name:'高雄 | 大港橋',sky:['#090d2a','#25235e','#5a3470'],sun:'#fff3c8',moon:true,hills:'rgba(0,0,0,0)',ground:['#4a5070','#3a3f58','#2a2e40'],stripe:'rgba(255,255,255,.06)',speck:['rgba(0,0,0,.2)','rgba(160,200,255,.18)'],grass:['#5fe0f0','#ffffff'],under:'#4a5070',shade:'rgba(0,0,10,.5)',water:'rgba(30,50,110,.9)',weather:'stars'},
   keelung:{name:'基隆 | 正濱漁港',sky:['#4f9fd8','#a8dcf0','#f4f0e0'],sun:'#fffbe8',hills:'rgba(0,0,0,0)',ground:['#c4beb2','#a49e92','#7a756c'],stripe:'rgba(60,60,60,.12)',speck:['rgba(60,60,60,.18)','rgba(255,255,255,.3)'],grass:['#7ab85a','#a0d07a'],under:'#b8b2a6',shade:'rgba(40,40,50,.45)',water:'rgba(30,110,140,.9)'},
@@ -2318,8 +2319,8 @@ const MAPS={
 const MKEYS=Object.keys(MAPS);
 let MAP=MAPS.beach,mapKey='beach';
 /* ---- Taiwan maps: 淡江大橋 · 高雄大港橋 · 正濱漁港 · 大魚的祝福 ---- */
-const TWK={tamsui:1,kaohsiung:1,keelung:1,tainan:1};
-const TWNOSP={tamsui:1,kaohsiung:1}; // spawns land on the bridge deck, no pillars out of the sea
+const TWK={hsinchu:1,tamsui:1,kaohsiung:1,keelung:1,tainan:1};
+const TWNOSP={tamsui:1,kaohsiung:1,hsinchu:1}; // spawns land on the bridge deck, no pillars out of the sea
 const TW_HOUSE=['#ff8fb1','#ffd34d','#7fd6c2','#6fb8ff','#ffa25c','#b99cff','#ff6b6b','#9be07a','#ffc2d6','#5fd0e0'];
 const TW_LIGHT=['#ff5d8f','#ffd23f','#5fc4ff','#9be07a','#b99cff','#ff8a3d','#5fe0d0'];
 let twCur=null; // features of the map being played (for the live foreground layer)
@@ -2329,6 +2330,7 @@ function twBase(kind,x,u,p){
   if(kind==='keelung'){const gap=Math.abs(x-W/2)<W*.085;return gap?H+30:H*.74;}
   if(kind==='tamsui'){if(x<W*.17)return H*.7+Math.sin(u*9+p[0])*6;if(x>W*.86)return H*.72+Math.sin(u*7+p[1])*6;return H+30;}
   if(kind==='kaohsiung'){if(x>W*.62&&x<W*.82)return H+30;return H*.76;}
+  if(kind==='hsinchu'){if(x<W*.03||x>W*.97)return H+30;return H*.84+Math.sin(u*9+p[0])*3;}
   return null;
 }
 /* whale-like big fish (大魚的祝福): local x tail→head, head points right toward the harbour */
@@ -2346,6 +2348,20 @@ function fishBody(c,F){const L=F.L,T=F.T;
   c.quadraticCurveTo(-L*.62,-T*.02,-L*.72,T*.10);c.quadraticCurveTo(-L*.52,T*.10,-L*.36,T*.08);c.closePath();}
 function twFeat(kind,r,base,spawns){
   const F={kind,top:new Array(W).fill(null)};
+  if(kind==='hsinchu'){
+    // two fish-scale stepped seawalls (rows of arch tiles, narrowing upward) + tetrapod piles in the sea gap
+    const g=Math.round(H*.84);F.g=g;F.tiles=[];F.pods=[];const tw=34,th=26;
+    for(const [cx,half] of [[W*.25,W*.13],[W*.75,W*.13]]){const rows=7;
+      for(let k=0;k<rows;k++){const hw=half*(1-k/rows*.78),y=g-(k+1)*th,off=k%2?tw/2:0;
+        for(let x=cx-hw+off;x+tw<=cx+hw+2;x+=tw)F.tiles.push({x:Math.round(x),y:Math.round(y),w:tw,h:th+2,k});}
+      for(let x=Math.round(cx-half);x<cx+half;x++)if(x>=0&&x<W)F.top[x]='stair';}
+    for(const x0 of [W*.035,W*.965])for(let k=0;k<3;k++)F.pods.push({x:Math.round(x0+(k-1)*26),y:Math.round(F.g-6-(k===1?20:0)),s:20+r()*4,a:r()*6.28});
+    // Mediterranean blue-and-white bell arch in the plaza
+    {const bx=Math.round(W*.5),bw=124,bh=122,btw=54,bth=110;F.bell={x:bx,bw,bh,tw:btw,th:bth,y0:F.g-bh,y1:F.g-bh-12-bth};}
+    const bx=F.bell.x,bw=F.bell.bw;
+    for(let x=bx-bw-8;x<bx+bw+8;x++)F.top[x]='bell';
+    F.rocks=[];for(let k=0;k<26;k++){const side=k%2?W*.25:W*.75;F.rocks.push({x:Math.round(side+(r()-.5)*W*.32),y:g+2,s:7+r()*9});}
+  }
   if(kind==='tainan'){
     const d=fishDims();F.L=d.L;F.T=d.T;F.cx=Math.round(W*.44);F.gy=base[F.cx];F.oy=F.gy-Math.round(F.T*.36);
     F.walk={x0:Math.round(W*.77),x1:Math.round(W*.91),y:WATER0-30};
@@ -2387,7 +2403,15 @@ function twFeat(kind,r,base,spawns){
 const whaleY=(F,x)=>{const u=(x-F.wx0)/(F.wx1-F.wx0);return F.g-F.wh-Math.round(Math.sin(u*Math.PI)*22+Math.sin(u*Math.PI*4)*5);};
 function hexPath(c,x,y,R){c.moveTo(x+R,y);for(let k=1;k<6;k++){const a=k*Math.PI/3;c.lineTo(x+Math.cos(a)*R,y+Math.sin(a)*R);}c.closePath();}
 const bridgeY=(F,x)=>{const u=(x-F.bx0)/(F.bx1-F.bx0);return F.by-Math.round(Math.sin(u*Math.PI)*22);};
+function podPath(c,x,y,s,a){for(let k=0;k<4;k++){const an=a+k*Math.PI/2+(k===3?.3:0),ex=x+Math.cos(an)*s,ey=y+Math.sin(an)*s*.8;c.moveTo(x,y);c.ellipse((x+ex)/2,(y+ey)/2,s*.6,s*.38,an,0,6.28);}c.moveTo(x+s*.48,y);c.arc(x,y,s*.48,0,6.28);}
+function tilePath(c,t){c.moveTo(t.x,t.y+t.h);c.lineTo(t.x,t.y+t.w*.5);c.arc(t.x+t.w/2,t.y+t.w*.5,t.w/2,Math.PI,0);c.lineTo(t.x+t.w,t.y+t.h);c.closePath();}
+function bellOpenings(B,g){const o=[],lw=(B.bw*2-3*22)/2;o.push({x:B.x-B.bw+22,w:lw,top:g-B.bh+16,bot:g});o.push({x:B.x+11,w:lw,top:g-B.bh+16,bot:g});
+  o.push({x:B.x-B.tw+16,w:B.tw*2-32,top:B.y1+16,bot:B.y0-12});return o;}
+function archPath(c,o){const r=o.w/2;c.moveTo(o.x,o.bot);c.lineTo(o.x,o.top+r);c.arc(o.x+r,o.top+r,r,Math.PI,0);c.lineTo(o.x+o.w,o.bot);c.closePath();}
+function bellBody(c,B,g){c.rect(B.x-B.bw,g-B.bh,B.bw*2,B.bh);c.rect(B.x-B.bw-8,g-B.bh-12,B.bw*2+16,12);const ay=B.y1+B.tw;c.moveTo(B.x-B.tw,B.y0-12);c.lineTo(B.x-B.tw,ay);c.arc(B.x,ay,B.tw,Math.PI,0);c.lineTo(B.x+B.tw,B.y0-12);c.closePath();}
 function twMask(mc,F){
+  if(F.kind==='hsinchu'){const B=F.bell;mc.beginPath();bellBody(mc,B,F.g);mc.fill();mc.save();mc.globalCompositeOperation='destination-out';mc.beginPath();for(const o of bellOpenings(B,F.g))archPath(mc,o);mc.fill();mc.restore();mc.beginPath();for(const t of F.tiles)tilePath(mc,t);mc.fill();mc.beginPath();for(const q of F.pods)podPath(mc,q.x,q.y,q.s,q.a);mc.fill();
+    mc.beginPath();for(const q of F.rocks){mc.moveTo(q.x+q.s,q.y);mc.ellipse(q.x,q.y,q.s,q.s*.7,0,0,6.28);}mc.fill();}
   if(F.kind==='tainan'){
     mc.save();fishXf(mc,F);mc.beginPath();fishBody(mc,F);mc.fill();mc.restore();
     mc.save();mc.globalCompositeOperation='destination-out';fishXf(mc,F);
@@ -2421,6 +2445,25 @@ function hexSkin(c,x,y,w,h,s,a,b){c.save();c.beginPath();c.rect(x,y,w,h);c.clip(
   const dx=s*1.5,dy=s*Math.sqrt(3);for(let i=-1;i*dx<w+s;i++)for(let j=-1;j*dy<h+s;j++){const cx=x+i*dx,cy=y+j*dy+(i%2?dy/2:0);c.beginPath();for(let k=0;k<6;k++){const an=k*Math.PI/3;const px=cx+Math.cos(an)*s,py=cy+Math.sin(an)*s;k?c.lineTo(px,py):c.moveTo(px,py);}c.closePath();c.stroke();}
   c.restore();}
 function twPaint(c,F,r){
+  if(F.kind==='hsinchu'){
+    // wet sand + rubble at the foot
+    c.fillStyle='#c9a77a';c.fillRect(0,F.g-4,W,H);c.fillStyle='rgba(255,190,120,.25)';c.fillRect(0,F.g-4,W,5);
+    for(const q of F.rocks){c.fillStyle=['#8f8578','#a39a8c','#7a7166'][q.x%3];c.beginPath();c.ellipse(q.x,q.y,q.s,q.s*.7,0,0,6.28);c.fill();}
+    // fish-scale concrete tiles, sunset light on the left of each arch
+    for(const t of F.tiles){c.save();c.beginPath();tilePath(c,t);c.clip();
+      const gr=c.createLinearGradient(t.x,t.y,t.x+t.w,t.y+t.h);gr.addColorStop(0,'#f6dcc0');gr.addColorStop(.55,'#d9c3a8');gr.addColorStop(1,'#a8927c');c.fillStyle=gr;c.fillRect(t.x,t.y,t.w,t.h);
+      c.strokeStyle='rgba(255,170,110,.55)';c.lineWidth=3;c.beginPath();c.arc(t.x+t.w/2,t.y+t.w*.5,t.w/2-2,Math.PI*1.05,Math.PI*1.6);c.stroke();
+      c.fillStyle='rgba(60,40,30,.18)';c.fillRect(t.x,t.y+t.h-6,t.w,6);c.restore();
+      c.strokeStyle='rgba(90,60,40,.55)';c.lineWidth=1.6;c.beginPath();tilePath(c,t);c.stroke();}
+    // bell arch: white plaster, blue trim around every opening
+    {const B=F.bell;c.save();c.beginPath();bellBody(c,B,F.g);c.fillStyle='#f7f5ee';c.fill();c.clip();
+      c.fillStyle='rgba(255,170,110,.25)';c.fillRect(B.x-B.bw-10,B.y1-12,40,F.g);
+      c.strokeStyle='#2f7fc4';c.lineWidth=12;c.beginPath();for(const o of bellOpenings(B,F.g))archPath(c,o);c.stroke();
+      c.strokeStyle='rgba(60,60,80,.12)';c.lineWidth=1;for(let y=B.y1;y<F.g;y+=14){c.beginPath();c.moveTo(B.x-B.bw-8,y);c.lineTo(B.x+B.bw+8,y);c.stroke();}
+      c.restore();}
+    // tetrapods
+    for(const q of F.pods){c.save();c.beginPath();podPath(c,q.x,q.y,q.s,q.a);const gp=c.createLinearGradient(q.x-q.s,q.y-q.s,q.x+q.s,q.y+q.s);gp.addColorStop(0,'#f0d8bc');gp.addColorStop(1,'#9a8c7c');c.fillStyle=gp;c.fill();c.restore();}
+  }
   if(F.kind==='tainan'){
     c.strokeStyle='rgba(120,100,80,.25)';c.lineWidth=1.5;for(let x=0;x<W;x+=36){c.beginPath();c.moveTo(x,H*.6);c.lineTo(x,H);c.stroke();}
     const L=F.L,T=F.T;
@@ -2508,7 +2551,7 @@ function twPaint(c,F,r){
     for(let x=F.kx0+10;x<F.kx1-20;x+=30){c.fillStyle='rgba(255,210,130,.85)';c.beginPath();c.roundRect(x,F.g-F.kh+24,18,26,[9,9,0,0]);c.fill();}
   }
 }
-function twTop(F,x,y){const k=F.top[x];if(!k)return null;
+function twTop(F,x,y){if(F.kind==='hsinchu'){if(F.top[x]==='bell'&&y<F.g-8)return ['#ffffff','#bfe0ff'];return y<F.g-6?['#fff0dc','#ffd6a8']:['#b89466','#e0c090'];}const k=F.top[x];if(!k)return null;
   if(F.kind==='tainan')return y<F.gy-14?['#ffffff','#dff1ff']:null;
   if(F.kind==='keelung')return y<F.q-6?['#9a9488','#c9c3b6']:null;
   if(F.kind==='tamsui')return ['#ffffff','#e6e4dc'];
@@ -2541,6 +2584,18 @@ function twDeco(c,F,r){
 }
 // far background (parallax layer)
 function twBG(ctx,kind){
+  if(kind==='hsinchu'){
+    // huge low sun over the Taiwan Strait, glitter path, wind turbines along the far coast
+    const sx=W*.5,sy=H*.6;const gl=ctx.createRadialGradient(sx,sy,10,sx,sy,260);gl.addColorStop(0,'rgba(255,230,160,.9)');gl.addColorStop(.35,'rgba(255,160,90,.45)');gl.addColorStop(1,'rgba(255,120,80,0)');ctx.fillStyle=gl;ctx.fillRect(sx-300,sy-300,600,600);
+    ctx.fillStyle='#ffd27a';ctx.beginPath();ctx.arc(sx,sy,62,Math.PI,0);ctx.fill();ctx.fillStyle='#ffb05a';ctx.fillRect(sx-62,sy,124,4);
+    ctx.fillStyle='rgba(120,60,80,.55)';ctx.fillRect(-300,sy,W+600,H);
+    for(let i=0;i<16;i++){ctx.fillStyle=`rgba(255,${200-i*6},120,${.75-i*.04})`;const w=110-i*5;ctx.fillRect(sx-w/2+Math.sin(i*1.7)*8,sy+6+i*9,w,3);}
+    {const cx=W*.5+150,cy=sy;ctx.fillStyle='rgba(250,240,235,.55)';ctx.fillRect(cx-22,cy-50,44,50);ctx.fillStyle='rgba(60,120,200,.6)';ctx.beginPath();ctx.arc(cx,cy-50,20,Math.PI,0);ctx.fill();ctx.fillStyle='rgba(60,120,200,.5)';ctx.beginPath();ctx.roundRect(cx-7,cy-30,14,30,[7,7,0,0]);ctx.fill();}
+    ctx.strokeStyle='rgba(70,40,60,.6)';ctx.fillStyle='rgba(70,40,60,.6)';ctx.lineWidth=2.5;
+    for(const [x,h] of [[W*.08,90],[W*.16,76],[W*.82,84],[W*.9,96],[W*.97,70]]){ctx.beginPath();ctx.moveTo(x,sy);ctx.lineTo(x,sy-h);ctx.stroke();
+      for(let k=0;k<3;k++){const a=k*2.094+.4;ctx.beginPath();ctx.moveTo(x,sy-h);ctx.lineTo(x+Math.cos(a)*h*.38,sy-h+Math.sin(a)*h*.38);ctx.stroke();}ctx.beginPath();ctx.arc(x,sy-h,3,0,6.28);ctx.fill();}
+    ctx.strokeStyle='rgba(70,40,60,.55)';ctx.lineWidth=2;for(const [x,y] of [[W*.38,H*.3],[W*.42,H*.27],[W*.6,H*.34]]){ctx.beginPath();ctx.moveTo(x-8,y);ctx.quadraticCurveTo(x-4,y-5,x,y);ctx.quadraticCurveTo(x+4,y-5,x+8,y);ctx.stroke();}
+  }
   if(kind==='tainan'){
     ctx.fillStyle='rgba(90,60,80,.45)';ctx.beginPath();ctx.moveTo(-200,H+200);for(let x=-200;x<=W+200;x+=30)ctx.lineTo(x,H*.6+Math.sin(x*.01)*8);ctx.lineTo(W+200,H+200);ctx.fill();
     ctx.fillStyle='rgba(70,45,60,.6)';
@@ -2572,6 +2627,14 @@ function twBG(ctx,kind){
   }
 }
 // live foreground (drawn every frame over the terrain): lights that change per round
+function twBells(ctx,F){const B=F.bell,t=performance.now()/1000;
+  bellOpenings(B,F.g).forEach((o,i)=>{const hx=o.x+o.w/2,hy=o.top+o.w*.5-4;
+    if(!isSolid(o.x-4,hy)&&!isSolid(o.x+o.w+4,hy))return; // its pillars were blown away
+    ctx.strokeStyle='#5a4030';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(o.x,hy);ctx.lineTo(o.x+o.w,hy);ctx.stroke();
+    ctx.save();ctx.translate(hx,hy);ctx.rotate(Math.sin(t*1.6+i*1.3)*.12);const s=i===2?.9:1;ctx.scale(s,s);
+    ctx.beginPath();ctx.moveTo(-6,2);ctx.quadraticCurveTo(-8,14,-18,30);ctx.quadraticCurveTo(0,36,18,30);ctx.quadraticCurveTo(8,14,6,2);ctx.closePath();
+    const g=ctx.createLinearGradient(-18,0,18,0);g.addColorStop(0,'#3e5a3a');g.addColorStop(.45,'#7a9a6a');g.addColorStop(1,'#2e4430');ctx.fillStyle=g;ctx.fill();ctx.strokeStyle='#3b2716';ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle='#3b2716';ctx.beginPath();ctx.arc(0,33,3.5,0,6.28);ctx.fill();ctx.fillStyle='#5a4030';ctx.fillRect(-3,-2,6,5);ctx.restore();});}
 function twFG(ctx,F,rn){
   if(!F)return;const col=TW_LIGHT[((rn||1)-1)%TW_LIGHT.length];
   if(F.kind==='tamsui'){
@@ -2698,7 +2761,7 @@ function genTerrain(r,spawns){
       if(!s&&above){tctx.fillStyle=M.shade;tctx.fillRect(x,y-3,1,3);}
     }
   }
-  solidLook(tctx,m);
+  solidLook(tctx,m);tctx.globalAlpha=1;tctx.fillStyle='#000';tctx.globalCompositeOperation='source-over';
   if(TF)twDeco(tctx,TF,r);
 }
 // Readable-terrain rule (Taiwan maps and all new maps): anything solid = ink outline + a faint triangle mosaic.
@@ -2727,7 +2790,7 @@ function hitFlavor(pr,x,y){const k=Object.keys(WEAPONS).find(q=>WEAPONS[q]===pr.
   if(pr.power){tone(160,.3,{type:'sawtooth',to:60,vol:.12});P(10,i=>({x,y,vx:(Math.random()-.5)*200,vy:-100-Math.random()*160,t:.6,c:i%2?'#ff6b3d':'#ffd166',r:3}));}
   try{if(pr.shooter&&!pr.shooter.cpu)navigator.vibrate&&navigator.vibrate(k==='durian'?[30,30,60]:20);}catch(_){}}
 function carve(cx,cy,r,rim=true){
-  tctx.save();tctx.globalCompositeOperation='destination-out';tctx.beginPath();tctx.arc(cx,cy,r,0,6.28);tctx.fill();
+  tctx.save();tctx.globalCompositeOperation='destination-out';tctx.globalAlpha=1;tctx.fillStyle='#000';tctx.beginPath();tctx.arc(cx,cy,r,0,6.28);tctx.fill();
   if(rim){tctx.globalCompositeOperation='source-atop';tctx.strokeStyle='#3b2716';tctx.lineWidth=5;tctx.beginPath();tctx.arc(cx,cy,r+2,0,6.28);tctx.stroke();}
   tctx.restore();
   for(let y=Math.max(0,Math.floor(cy-r));y<=Math.min(H-1,Math.ceil(cy+r));y++)
@@ -3485,6 +3548,7 @@ function draw(){
   ctx.save();applyCam(1);
   if(twCur&&TWK[mapKey])try{ctx.save();ctx.globalAlpha=.4;twFG(ctx,twCur,roundNo);ctx.restore();}catch(_){}
   ctx.drawImage(terr,0,0,W,H);
+  if(twCur&&twCur.kind==='hsinchu')try{twBells(ctx,twCur);}catch(_){}
   const t=performance.now()/1000;
   const wa=3+waveFX*7;ctx.beginPath();ctx.moveTo(-400,H+900);for(let x=-400;x<=W+400;x+=8)ctx.lineTo(x,water+Math.sin(x*.03+t*(2+waveFX*3))*wa);ctx.lineTo(W+400,H+900);ctx.closePath();
   ctx.fillStyle=MAP.water;ctx.fill();
@@ -4213,7 +4277,7 @@ function fxEnhance(root){
 }
 document.addEventListener('pointerdown',e=>{if(fxPop&&!fxPop.contains(e.target)&&!e.target.closest('.fx-btn'))fxClose();},true);
 addEventListener('resize',fxClose);document.addEventListener('scroll',e=>{if(fxPop&&!fxPop.contains(e.target))fxClose();},true);
-const MAPDESC={tamsui:'橫跨淡水河口的單塔斜張橋，以雙手合十為意象，與觀音山夕照相映。',kaohsiung:'高雄港第三船渠的水平旋轉景觀橋，緊鄰六角形模組堆疊的流行音樂中心。',keelung:'和平島旁的老漁港，港邊彩色屋並排倒映水面，為基隆代表性港灣街景。',tainan:'安平港濱歷史公園的地標裝置藝術，魚口內嵌彩色玻璃拼成的台灣。',beach:'地勢平緩的熱帶沙灘，適合初次上手。',volcano:'雙火山矗立中央，坡度陡峭，制高點優勢明顯。',sky:'數座浮空小島組成的戰場，移動時須留意落海。',coral:'粉紅珊瑚礁內布滿洞穴，可作為掩蔽。',ice:'冰山稜線起伏尖銳，高處容易遭擊落。',canyon:'中央峽谷將戰場一分為二，需精準掌握力道。',terrace:'層層堆疊的香蕉梯田，越往上視野越開闊。',wreck:'海灣中央橫躺一艘沉船，船身可作為掩體。',donut:'島嶼中央為大型空洞，移動時須留意落入。',night:'月光下的海灘，光線較暗，需仔細判斷落點。',pillars:'海岸石柱林立，柱頂位置不易被擊中。'};
+const MAPDESC={hsinchu:'新竹南寮漁港的觀海階梯，魚鱗狀護岸層層疊起，藍白鐘塔與海岸夕陽相映。',tamsui:'橫跨淡水河口的單塔斜張橋，以雙手合十為意象，與觀音山夕照相映。',kaohsiung:'高雄港第三船渠的水平旋轉景觀橋，緊鄰六角形模組堆疊的流行音樂中心。',keelung:'和平島旁的老漁港，港邊彩色屋並排倒映水面，為基隆代表性港灣街景。',tainan:'安平港濱歷史公園的地標裝置藝術，魚口內嵌彩色玻璃拼成的台灣。',beach:'地勢平緩的熱帶沙灘，適合初次上手。',volcano:'雙火山矗立中央，坡度陡峭，制高點優勢明顯。',sky:'數座浮空小島組成的戰場，移動時須留意落海。',coral:'粉紅珊瑚礁內布滿洞穴，可作為掩蔽。',ice:'冰山稜線起伏尖銳，高處容易遭擊落。',canyon:'中央峽谷將戰場一分為二，需精準掌握力道。',terrace:'層層堆疊的香蕉梯田，越往上視野越開闊。',wreck:'海灣中央橫躺一艘沉船，船身可作為掩體。',donut:'島嶼中央為大型空洞，移動時須留意落入。',night:'月光下的海灘，光線較暗，需仔細判斷落點。',pillars:'海岸石柱林立，柱頂位置不易被擊中。'};
 const MPV={};
 function mapReal(k){if(MPV[k])return MPV[k];
   const sW=W,sMap=MAP,sKey=mapKey,sSol=solid,sTw=twCur,bk=document.createElement('canvas');bk.width=terr.width;bk.height=terr.height;bk.getContext('2d').drawImage(terr,0,0);
@@ -4221,7 +4285,7 @@ function mapReal(k){if(MPV[k])return MPV[k];
     const o=document.createElement('canvas');o.width=520;o.height=216;const c=o.getContext('2d'),sc=520/W;const M=MAP;
     const g=c.createLinearGradient(0,0,0,216);g.addColorStop(0,M.sky[0]);g.addColorStop(.6,M.sky[1]);g.addColorStop(1,M.sky[2]);c.fillStyle=g;c.fillRect(0,0,520,216);
     c.fillStyle=M.sun;c.globalAlpha=.9;c.beginPath();c.arc(430,46,20,0,6.28);c.fill();c.globalAlpha=1;if(M.moon){c.fillStyle=M.sky[0];c.beginPath();c.arc(438,40,18,0,6.28);c.fill();}
-    if(twCur){c.save();c.globalAlpha=.55;c.scale(sc,sc);try{twFG(c,twCur,1);}catch(_){}c.restore();}c.drawImage(terr,0,0,520,216);c.fillStyle=M.water||'#3aa6b9';c.fillRect(0,WATER0*sc,520,216-WATER0*sc);c.fillStyle='rgba(255,255,255,.55)';c.fillRect(0,WATER0*sc,520,1.5);
+    if(k==='hsinchu'){c.save();c.scale(sc,sc);try{twBG(c,k);}catch(_){}c.restore();}if(twCur){c.save();c.globalAlpha=.55;c.scale(sc,sc);try{twFG(c,twCur,1);}catch(_){}c.restore();}c.drawImage(terr,0,0,520,216);c.fillStyle=M.water||'#3aa6b9';c.fillRect(0,WATER0*sc,520,216-WATER0*sc);c.fillStyle='rgba(255,255,255,.55)';c.fillRect(0,WATER0*sc,520,1.5);
     out=o;}catch(_){out=null;}
   W=sW;MAP=sMap;mapKey=sKey;solid=sSol;twCur=sTw;terr.width=bk.width;terr.height=bk.height;tctx.drawImage(bk,0,0);
   return MPV[k]=out;}
