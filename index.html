@@ -1243,7 +1243,16 @@ ol.road li{border-color:#d9b98a}
 .wp-row span{display:flex;align-items:center;justify-content:center;background:#fff;border:2px solid var(--ink);border-radius:50%;padding:3px;box-shadow:0 2px 0 var(--ink)}
 .ii{cursor:pointer}.ii.on .ii-ic{outline:3px dashed #ffb547;outline-offset:3px}
 .ii-wp{margin-top:4px;animation:emoR .2s ease-out}
-.pk-wp{margin-top:3px}.pk-wp span{padding:1px}
+.pk-wp{margin-top:3px;gap:3px!important}.pk-wp span{padding:1px}
+
+.pick-foot{flex-wrap:nowrap!important;align-items:center!important;gap:12px!important}
+.pick-foot .cnt{margin-right:0!important;flex:none;white-space:nowrap}.pick-foot .cnt:empty{display:none}
+.pick-foot .pick-tip{flex:1;min-width:0;height:58px!important;min-height:0!important;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;column-gap:10px;align-content:center;text-align:left!important;font-size:13px!important;line-height:1.35}
+.pick-tip .pt-t{grid-column:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pick-tip .pt-t b{margin-right:8px}
+.pick-foot .pick-tip small{grid-column:1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:11.5px;line-height:1.3}
+.pick-foot .pick-tip .pk-wp{grid-column:2;grid-row:1/3;align-self:center;margin:0!important;justify-content:flex-end;flex-wrap:nowrap}
+.pick-foot #pick-rand,.pick-foot #pick-go{font-size:20px!important;padding:10px 26px!important;min-width:104px;flex:none}
+.pick-foot .pick-time{flex:none;font-size:22px!important;min-width:54px}
 </style>
 
 <div class="wrap">
@@ -1295,8 +1304,7 @@ ol.road li{border-color:#d9b98a}
           <div class="pick-who" id="pick-who"></div>
           <p>選擇 3 項道具，倒數結束後將自動配置。</p>
           <div class="pick-grid" id="pick-grid"></div>
-          <div class="pick-tip" id="pick-tip" role="status"></div>
-          <div class="pick-foot"><span class="cnt" id="pick-cnt">已選 0 / 3</span><b class="pick-time" id="pick-time">20</b><button class="ghost2" id="pick-rand">隨機</button><button class="cta" id="pick-go" disabled>確認</button></div>
+          <div class="pick-foot"><span class="cnt" id="pick-cnt">已選 0 / 3</span><div class="pick-tip" id="pick-tip" role="status"></div><b class="pick-time" id="pick-time">20</b><button class="ghost2" id="pick-rand">隨機</button><button class="cta" id="pick-go" disabled>確認</button></div>
         </div>
       </div>
 
@@ -3604,6 +3612,12 @@ function drawSky(){
   ctx.strokeStyle='rgba(90,58,30,.45)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(-34,-3);ctx.lineTo(10,-3);ctx.moveTo(-20,5);ctx.lineTo(30,5);ctx.stroke();
   ctx.fillStyle='#3a2410';ctx.font=TC(900,12);ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('第 '+roundNo+' 回合',0,1);
   ctx.restore();
+  { // faint art title of the map under the round plank
+    const nm=(MAP.name||'').split(' | ').pop();ctx.save();ctx.translate(0,84);ctx.rotate(-.03);ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.font=TC(900,22);if(ctx.letterSpacing!==undefined)ctx.letterSpacing='6px';
+    ctx.globalAlpha=.32;ctx.lineJoin='round';ctx.lineWidth=5;ctx.strokeStyle='#3b2716';ctx.strokeText(nm,0,0);ctx.fillStyle='#fff8e6';ctx.fillText(nm,0,0);
+    ctx.globalAlpha=.22;ctx.strokeStyle='#fff8e6';ctx.lineWidth=1.2;const w=ctx.measureText(nm).width/2+14;ctx.beginPath();ctx.moveTo(-w,14);ctx.quadraticCurveTo(0,20,w,14);ctx.stroke();
+    ctx.restore();}
   // blowing streaks
   if(str){ctx.lineCap='round';for(let i=0;i<3;i++){const y=-6+i*8,L=14+str*4.2,ph=(tm*3+i*.33)%1;ctx.strokeStyle=INKC;ctx.lineWidth=4.5;ctx.beginPath();ctx.moveTo(dir*(46+ph*6),y);ctx.lineTo(dir*(46+L+ph*6),y+Math.sin(tm*6+i)*2);ctx.stroke();ctx.strokeStyle='#fff';ctx.lineWidth=2.2;ctx.stroke();}}
   // cloud body
@@ -4014,7 +4028,7 @@ function drawPick(){
     b.onclick=()=>{if(chosen.includes(k))chosen=chosen.filter(x=>x!==k);else{chosen.push(k);if(chosen.length>3)chosen.shift();}pickTip=k;drawPick();SFX.click();};
     pickGrid.appendChild(b);
   });
-  const tk=pickTip||chosen[chosen.length-1];$('pick-tip').innerHTML=tk?`<b>${ITEMS[tk].name}</b>：${ITEMFUN[tk]}<br><small>${ITEMS[tk].desc}（可用 ${ITEMS[tk].n} 次）</small>`:'點選道具查看說明';if(tk){const wr=wpRow(tk,22);wr.classList.add('pk-wp');$('pick-tip').appendChild(wr);}
+  const tk=pickTip||chosen[chosen.length-1];$('pick-tip').innerHTML=tk?`<div class="pt-t"><b>${ITEMS[tk].name}</b><span>${ITEMFUN[tk]}</span></div><small>${ITEMS[tk].desc}</small>`:'<div class="pt-t"><span>點選道具查看說明</span></div>';if(tk){const wr=wpRow(tk,16);wr.classList.add('pk-wp');$('pick-tip').appendChild(wr);}
   $('pick-cnt').textContent=['尚可選擇 3 項','尚可選擇 2 項','尚可選擇 1 項',''][chosen.length]||'';pickGo.disabled=chosen.length!==3;
 }
 let pickLeft=0;const PICK_T=20;
