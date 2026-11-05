@@ -3909,7 +3909,7 @@ function nextPick(){ // after the fly-by intro: every human sees who's in the ma
   if(!p){pickEl.hidden=true;picking=null;renderDeck();startTurn();return;}
   if(p.cpu&&!p.remote){setKit(p,ON?['heal','power','shield']:randKit());nextPick();return;}
   if(p.remote){pickEl.hidden=true;picking=null;if(ON)ON.waitKit=true;banner={text:'等大家撿道具⋯',sub:players.filter(q=>q.remote&&!q.kit).map(q=>q.name).join('、')+' 還在挑',t:2.2};return;}
-  picking=p;chosen=loadKit();pickTip=null;pickLeft=PICK_T;
+  picking=p;chosen=[];pickTip=null;pickLeft=PICK_T;
   $('pick-title').textContent=`${p.name}｜道具選擇`;
   const others=players.filter(q=>q!==p&&q.alive);
   $('pick-who').classList.toggle('many',others.length>4);$('pick-who').innerHTML='<small>本場角色</small>'+others.map(q=>{const foe=foeOf(p,q),hid=foe&&q.camo;return `<span class="${foe?'foe':'ally'}"><canvas width="64" height="64" data-ch="${hid?'':q.ch}"></canvas><b>${hid?'？？？':q.name}</b><i>${foe?(q.boss?'魔王':'敵人'):'隊友'}</i></span>`;}).join('');
@@ -3918,7 +3918,7 @@ function nextPick(){ // after the fly-by intro: every human sees who's in the ma
 function updPick(dt){
   if(!picking||pickEl.hidden)return;pickLeft-=dt;const s=Math.max(0,Math.ceil(pickLeft)),el=$('pick-time');
   if(el.textContent!==String(s)){el.textContent=s;el.classList.toggle('hurry',s<=5);if(s<=5&&s>0)tone(800,.06,{type:'square',vol:.08,exact:true});}
-  if(pickLeft<=0){const pool=IKEYS.filter(x=>!chosen.includes(x));while(chosen.length<3)chosen.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);toast('時間到！幫你亂撿了',1600);pickGo.onclick();}
+  if(pickLeft<=0){const pool=IKEYS.filter(x=>!chosen.includes(x));while(chosen.length<3)chosen.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);toast('已自動配置道具',1600);pickGo.onclick();}
 }
 pickGo.onclick=()=>{if(!picking||chosen.length!==3)return;setKit(picking,chosen);saveKit(chosen);if(ON&&!picking.cpu)netSend({k:'kit',uid:ON.me,kit:chosen.slice()});nextPick();};
 $('pick-rand').onclick=()=>{const pool=IKEYS.slice();chosen=[];while(chosen.length<3)chosen.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);drawPick();};
