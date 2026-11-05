@@ -2464,12 +2464,6 @@ function twTop(F,x,y){const k=F.top[x];if(!k)return null;
 function twDeco(c,F,r){
   if(F.kind==='tainan'){
     const rail=(x0,x1,y)=>{c.strokeStyle='#ffffff';c.lineWidth=2;c.beginPath();c.moveTo(x0,y-16);c.lineTo(x1,y-16);c.stroke();for(let x=x0;x<=x1;x+=16){c.beginPath();c.moveTo(x,y);c.lineTo(x,y-16);c.stroke();c.beginPath();c.moveTo(x,y-10);c.quadraticCurveTo(x+8,y-4,x+16,y-10);c.stroke();}};
-    // inside the belly: pale ribs and a glowing glass wall, so it reads as a room
-    c.save();fishXf(c,F);c.beginPath();c.ellipse(F.L*.02,F.T*.06,F.L*.2,F.T*.21,0,0,6.28);c.ellipse(-F.L*.02,F.T*.34,30,30,0,0,6.28);c.clip();
-    const gi=c.createRadialGradient(F.L*.02,F.T*.02,4,F.L*.02,F.T*.06,F.L*.22);gi.addColorStop(0,'#fff6e0');gi.addColorStop(1,'#cfe0ec');c.fillStyle=gi;c.fillRect(-F.L*.3,-F.T*.3,F.L*.6,F.T*.8);
-    c.strokeStyle='rgba(47,127,196,.35)';c.lineWidth=3;for(let k=-4;k<=4;k++){c.beginPath();c.moveTo(F.L*.02+k*F.L*.045,-F.T*.2);c.quadraticCurveTo(F.L*.02+k*F.L*.05,F.T*.1,F.L*.02+k*F.L*.045,F.T*.3);c.stroke();}
-    const GL2=['#ff5d8f','#ffd23f','#5fc4ff','#9be07a','#ff8a3d','#b99cff'];for(let i=0;i<18;i++){c.fillStyle=GL2[i%6];c.globalAlpha=.35;c.beginPath();const x=-F.L*.16+(i%6)*F.L*.06,y=-F.T*.12+Math.floor(i/6)*F.T*.08;c.moveTo(x,y);c.lineTo(x+12,y+3);c.lineTo(x+4,y+12);c.closePath();c.fill();}c.globalAlpha=1;
-    c.restore();
     c.save();fishXf(c,F);c.fillStyle='#d9b27a';c.fillRect(-F.L*.08,-F.T*.02,F.L*.2,8);c.strokeStyle='rgba(80,40,10,.5)';c.lineWidth=1.5;c.strokeRect(-F.L*.08,-F.T*.02,F.L*.2,8);c.restore();
     rail(W*.04,F.cx-F.L*.76,H*.74-2);rail(F.cx+F.L*.58,W*.77,H*.74-2);
     for(const x of [W*.06,W*.72,W*.95]){c.strokeStyle='#3b3b44';c.lineWidth=3;c.beginPath();c.moveTo(x,H*.74);c.lineTo(x,H*.74-70);c.quadraticCurveTo(x,H*.74-80,x+10,H*.74-78);c.stroke();c.fillStyle='#ffe9a8';c.beginPath();c.arc(x+12,H*.74-74,5,0,6.28);c.fill();}
@@ -2651,11 +2645,27 @@ function genTerrain(r,spawns){
       if(!s&&above){tctx.fillStyle=M.shade;tctx.fillRect(x,y-3,1,3);}
     }
   }
+  if(TF)solidLook(tctx,m);
   if(TF)twDeco(tctx,TF,r);
 }
+// Readable-terrain rule (Taiwan maps and all new maps): anything solid = ink outline + a faint triangle mosaic.
+// Background (no outline, no mosaic, faded) can't be stood on.
+let MOSAIC=null;
+function mosaicTile(){if(MOSAIC)return MOSAIC;const t=document.createElement('canvas');t.width=t.height=36;const g=t.getContext('2d');
+  const C=['rgba(255,255,255,.22)','rgba(255,255,255,.08)','rgba(40,20,10,.10)','rgba(255,255,255,.14)'];let k=0;
+  for(let y=0;y<2;y++)for(let x=0;x<2;x++){const X=x*18,Y=y*18;g.fillStyle=C[k++%4];g.beginPath();g.moveTo(X,Y);g.lineTo(X+18,Y);g.lineTo(X,Y+18);g.fill();g.fillStyle=C[(k+1)%4];g.beginPath();g.moveTo(X+18,Y);g.lineTo(X+18,Y+18);g.lineTo(X,Y+18);g.fill();}
+  return MOSAIC=t;}
+function solidLook(c,m){
+  c.save();c.fillStyle=c.createPattern(mosaicTile(),'repeat');c.globalCompositeOperation='source-atop';c.fillRect(0,0,W,H);c.restore();
+  // inner ink rim = mask minus mask eroded by 3px
+  const e=document.createElement('canvas');e.width=W;e.height=H;const g=e.getContext('2d');g.drawImage(m,0,0);g.globalCompositeOperation='destination-in';
+  for(const[dx,dy]of[[3,0],[-3,0],[0,3],[0,-3],[2,2],[-2,2],[2,-2],[-2,-2]])g.drawImage(m,dx,dy);
+  const o=document.createElement('canvas');o.width=W;o.height=H;const q=o.getContext('2d');q.drawImage(m,0,0);q.globalCompositeOperation='source-in';q.fillStyle='#3b2716';q.fillRect(0,0,W,H);
+  q.globalCompositeOperation='destination-out';q.drawImage(e,0,0);
+  c.save();c.globalCompositeOperation='source-atop';c.drawImage(o,0,0);c.restore();}
 function carve(cx,cy,r,rim=true){
   tctx.save();tctx.globalCompositeOperation='destination-out';tctx.beginPath();tctx.arc(cx,cy,r,0,6.28);tctx.fill();
-  if(rim){tctx.globalCompositeOperation='source-atop';tctx.strokeStyle='rgba(90,52,22,.55)';tctx.lineWidth=6;tctx.beginPath();tctx.arc(cx,cy,r+2,0,6.28);tctx.stroke();}
+  if(rim){tctx.globalCompositeOperation='source-atop';tctx.strokeStyle=TWK[mapKey]?'#3b2716':'rgba(90,52,22,.55)';tctx.lineWidth=TWK[mapKey]?5:6;tctx.beginPath();tctx.arc(cx,cy,r+2,0,6.28);tctx.stroke();}
   tctx.restore();
   for(let y=Math.max(0,Math.floor(cy-r));y<=Math.min(H-1,Math.ceil(cy+r));y++)
     for(let x=Math.max(0,Math.floor(cx-r));x<=Math.min(W-1,Math.ceil(cx+r));x++)
@@ -3357,8 +3367,8 @@ function draw(){
   for(const c of clouds)drawCloud(c);
   ctx.restore();
   ctx.save();applyCam(1);
+  if(twCur&&TWK[mapKey])try{ctx.save();ctx.globalAlpha=.4;twFG(ctx,twCur,roundNo);ctx.restore();}catch(_){}
   ctx.drawImage(terr,0,0,W,H);
-  if(twCur&&TWK[mapKey])try{twFG(ctx,twCur,roundNo);}catch(_){}
   const t=performance.now()/1000;
   const wa=3+waveFX*7;ctx.beginPath();ctx.moveTo(-400,H+900);for(let x=-400;x<=W+400;x+=8)ctx.lineTo(x,water+Math.sin(x*.03+t*(2+waveFX*3))*wa);ctx.lineTo(W+400,H+900);ctx.closePath();
   ctx.fillStyle=MAP.water;ctx.fill();
@@ -4084,7 +4094,7 @@ function fxEnhance(root){
 }
 document.addEventListener('pointerdown',e=>{if(fxPop&&!fxPop.contains(e.target)&&!e.target.closest('.fx-btn'))fxClose();},true);
 addEventListener('resize',fxClose);document.addEventListener('scroll',e=>{if(fxPop&&!fxPop.contains(e.target))fxClose();},true);
-const MAPDESC={tamsui:'橫跨淡水河口的單塔斜張橋，與觀音山夕照相映，橋墩燈光隨回合變換。',kaohsiung:'高雄港第三船渠的水平旋轉景觀橋，緊鄰六角形模組堆疊的流行音樂中心。',keelung:'和平島旁的老漁港，港邊彩色屋並排倒映水面，為基隆代表性港灣街景。',tainan:'安平港濱歷史公園的地標裝置藝術，魚口內嵌彩色玻璃拼成的台灣。',beach:'地勢平緩的熱帶沙灘，適合初次上手。',volcano:'雙火山矗立中央，坡度陡峭，制高點優勢明顯。',sky:'數座浮空小島組成的戰場，移動時須留意落海。',coral:'粉紅珊瑚礁內布滿洞穴，可作為掩蔽。',ice:'冰山稜線起伏尖銳，高處容易遭擊落。',canyon:'中央峽谷將戰場一分為二，需精準掌握力道。',terrace:'層層堆疊的香蕉梯田，越往上視野越開闊。',wreck:'海灣中央橫躺一艘沉船，船身可作為掩體。',donut:'島嶼中央為大型空洞，移動時須留意落入。',night:'月光下的海灘，光線較暗，需仔細判斷落點。',pillars:'海岸石柱林立，柱頂位置不易被擊中。'};
+const MAPDESC={tamsui:'橫跨淡水河口的單塔斜張橋，以雙手合十為意象，與觀音山夕照相映。',kaohsiung:'高雄港第三船渠的水平旋轉景觀橋，緊鄰六角形模組堆疊的流行音樂中心。',keelung:'和平島旁的老漁港，港邊彩色屋並排倒映水面，為基隆代表性港灣街景。',tainan:'安平港濱歷史公園的地標裝置藝術，魚口內嵌彩色玻璃拼成的台灣。',beach:'地勢平緩的熱帶沙灘，適合初次上手。',volcano:'雙火山矗立中央，坡度陡峭，制高點優勢明顯。',sky:'數座浮空小島組成的戰場，移動時須留意落海。',coral:'粉紅珊瑚礁內布滿洞穴，可作為掩蔽。',ice:'冰山稜線起伏尖銳，高處容易遭擊落。',canyon:'中央峽谷將戰場一分為二，需精準掌握力道。',terrace:'層層堆疊的香蕉梯田，越往上視野越開闊。',wreck:'海灣中央橫躺一艘沉船，船身可作為掩體。',donut:'島嶼中央為大型空洞，移動時須留意落入。',night:'月光下的海灘，光線較暗，需仔細判斷落點。',pillars:'海岸石柱林立，柱頂位置不易被擊中。'};
 const MPV={};
 function mapReal(k){if(MPV[k])return MPV[k];
   const sW=W,sMap=MAP,sKey=mapKey,sSol=solid,sTw=twCur,bk=document.createElement('canvas');bk.width=terr.width;bk.height=terr.height;bk.getContext('2d').drawImage(terr,0,0);
@@ -4092,7 +4102,7 @@ function mapReal(k){if(MPV[k])return MPV[k];
     const o=document.createElement('canvas');o.width=520;o.height=216;const c=o.getContext('2d'),sc=520/W;const M=MAP;
     const g=c.createLinearGradient(0,0,0,216);g.addColorStop(0,M.sky[0]);g.addColorStop(.6,M.sky[1]);g.addColorStop(1,M.sky[2]);c.fillStyle=g;c.fillRect(0,0,520,216);
     c.fillStyle=M.sun;c.globalAlpha=.9;c.beginPath();c.arc(430,46,20,0,6.28);c.fill();c.globalAlpha=1;if(M.moon){c.fillStyle=M.sky[0];c.beginPath();c.arc(438,40,18,0,6.28);c.fill();}
-    c.drawImage(terr,0,0,520,216);if(twCur){c.save();c.scale(sc,sc);try{twFG(c,twCur,1);}catch(_){}c.restore();}c.fillStyle=M.water||'#3aa6b9';c.fillRect(0,WATER0*sc,520,216-WATER0*sc);c.fillStyle='rgba(255,255,255,.55)';c.fillRect(0,WATER0*sc,520,1.5);
+    if(twCur){c.save();c.globalAlpha=.55;c.scale(sc,sc);try{twFG(c,twCur,1);}catch(_){}c.restore();}c.drawImage(terr,0,0,520,216);c.fillStyle=M.water||'#3aa6b9';c.fillRect(0,WATER0*sc,520,216-WATER0*sc);c.fillStyle='rgba(255,255,255,.55)';c.fillRect(0,WATER0*sc,520,1.5);
     out=o;}catch(_){out=null;}
   W=sW;MAP=sMap;mapKey=sKey;solid=sSol;twCur=sTw;terr.width=bk.width;terr.height=bk.height;tctx.drawImage(bk,0,0);
   return MPV[k]=out;}
