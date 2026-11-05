@@ -3803,7 +3803,7 @@ function renderDeck(){
   wswEl.disabled=!human;
   itemsBar.innerHTML='';
   const owner=!c.cpu?c:(players.find(q=>!q.cpu&&q.alive)||players.find(q=>!q.cpu)||null);
-  if(owner&&owner.kit)owner.kit.slice().sort((a,b)=>IKEYS.indexOf(a)-IKEYS.indexOf(b)).forEach((k,i,arr)=>{if(i>0&&!!ISELF[k]!==!!ISELF[arr[i-1]]){const g=document.createElement('i');g.className='it-gap';itemsBar.appendChild(g);}
+  if(owner&&owner.kit)owner.kit.filter(k=>inf||owner.items[k]>0||owner===c&&(mods.used===k||mods.armed===k)).sort((a,b)=>IKEYS.indexOf(a)-IKEYS.indexOf(b)).forEach((k,i,arr)=>{if(i>0&&!!ISELF[k]!==!!ISELF[arr[i-1]]){const g=document.createElement('i');g.className='it-gap';itemsBar.appendChild(g);}
     const cnt=owner.items[k],b=document.createElement('button');b.className='it';b.id='it-'+k;
     const mineT=owner===c;b.setAttribute('aria-pressed',mineT&&(mods.armed===k||mods.used===k));
     b.disabled=!human||!mineT||sel==='clay'&&!ISELF[k]&&k!=='double'&&mods.armed!==k||!!mods.used&&mods.used!==k||shotNo>0||(!(cnt>0)&&!inf&&mods.used!==k);
