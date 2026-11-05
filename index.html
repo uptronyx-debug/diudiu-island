@@ -2627,11 +2627,11 @@ function twBG(ctx,kind){
   }
 }
 // live foreground (drawn every frame over the terrain): lights that change per round
-function twBells(ctx,F){const B=F.bell,t=performance.now()/1000;
+function twBells(ctx,F,still){const B=F.bell,t=still?0:performance.now()/1000;
   bellOpenings(B,F.g).forEach((o,i)=>{const hx=o.x+o.w/2,hy=o.top+o.w*.5-4;
     if(!isSolid(o.x-4,hy)&&!isSolid(o.x+o.w+4,hy))return; // its pillars were blown away
     ctx.strokeStyle='#5a4030';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(o.x,hy);ctx.lineTo(o.x+o.w,hy);ctx.stroke();
-    ctx.save();ctx.translate(hx,hy);ctx.rotate(Math.sin(t*1.6+i*1.3)*.12);const s=i===2?.9:1;ctx.scale(s,s);
+    ctx.save();ctx.translate(hx,hy);if(!still)ctx.rotate(Math.sin(t*1.6+i*1.3)*.12);const s=i===2?.9:1;ctx.scale(s,s);
     ctx.beginPath();ctx.moveTo(-6,2);ctx.quadraticCurveTo(-8,14,-18,30);ctx.quadraticCurveTo(0,36,18,30);ctx.quadraticCurveTo(8,14,6,2);ctx.closePath();
     const g=ctx.createLinearGradient(-18,0,18,0);g.addColorStop(0,'#3e5a3a');g.addColorStop(.45,'#7a9a6a');g.addColorStop(1,'#2e4430');ctx.fillStyle=g;ctx.fill();ctx.strokeStyle='#3b2716';ctx.lineWidth=2;ctx.stroke();
     ctx.fillStyle='#3b2716';ctx.beginPath();ctx.arc(0,33,3.5,0,6.28);ctx.fill();ctx.fillStyle='#5a4030';ctx.fillRect(-3,-2,6,5);ctx.restore();});}
@@ -2763,6 +2763,8 @@ function genTerrain(r,spawns){
   }
   solidLook(tctx,m);tctx.globalAlpha=1;tctx.fillStyle='#000';tctx.globalCompositeOperation='source-over';
   if(TF)twDeco(tctx,TF,r);
+  if(TF&&TF.kind==='hsinchu')twBells(tctx,TF,true);
+  {const d=tctx.getImageData(0,0,W,H).data;for(let i=0;i<W*H;i++)if(!solid[i]&&d[i*4+3]>127)solid[i]=1;} // what you see is what you hit
 }
 // Readable-terrain rule (Taiwan maps and all new maps): anything solid = ink outline + a faint triangle mosaic.
 // Background (no outline, no mosaic, faded) can't be stood on.
@@ -3096,7 +3098,7 @@ function fire(){
   const offs=w.spread?[-w.spread,0,w.spread]:[0],grp={};
   for(const o of offs){
     const a=aimRad(c,o),v=w.fixedV||power/100*VMAX;
-    projs.push({x:c.x+Math.cos(a)*24,y:c.y-16-Math.sin(a)*24,vx:Math.cos(a)*v,vy:-Math.sin(a)*v,w,shooter:c,age:0,trail:[],
+    const mz=muzzle(c,a);projs.push({x:mz[0],y:mz[1],vx:Math.cos(a)*v,vy:-Math.sin(a)*v,w,shooter:c,age:0,trail:[],
       grp,power:!!mods.power,freeze:!!mods.freeze,thunder:!!mods.thunder,ball:!!mods.ball,bounce:mods.ball?2:0,homing:!!mods.homing,tele:!!mods.tele&&shotNo===1&&o===0});
   }
   SFX.throwW(sel);if(c.ch==='cham'&&!c.revealed){c.flashT=.8;SFX.poof();for(let i=0;i<10;i++)parts.push({x:c.x+(Math.random()-.5)*20,y:c.y-16+(Math.random()-.5)*20,vx:(Math.random()-.5)*80,vy:-40-Math.random()*60,t:.6,c:'#c8f0c8',r:3});}
@@ -3105,6 +3107,9 @@ function fire(){
 }
 function skipTurn(){phase='settle';settleT=.3;charging=false;shotsLeft=0;}
 
+function muzzle(c,a){const sx=c.x,sy=c.y-16;for(let d=4;d<=24;d+=2){const x=sx+Math.cos(a)*d,y=sy-Math.sin(a)*d;if(isSolid(x,y))return[x,y];}return[sx+Math.cos(a)*24,sy-Math.sin(a)*24];}
+// move with sub-steps so a fast shot can't skip a thin wall in one frame
+function stepProjSafe(p,dt,wd=wind){const ox=p.x,oy=p.y;stepProj(p,dt,wd);const d=Math.hypot(p.x-ox,p.y-oy);if(d<=2)return;const n=Math.ceil(d/2);for(let k=1;k<=n;k++){const x=ox+(p.x-ox)*k/n,y=oy+(p.y-oy)*k/n;if(isSolid(x,y)){p.x=x;p.y=y;return;}}}
 function stepProj(p,dt,wd=wind){p.vx+=wd*WIND_K*p.w.windMul*dt;p.vy+=G*p.w.gMul*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.age+=dt;}
 
 function hurt(p,dmg,pr){
@@ -3211,7 +3216,7 @@ function updateProjs(){
       const t=players.filter(q=>q.alive&&q!==p.shooter).sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y))[0];
       if(t){const dx=t.x-p.x,dy=t.y-14-p.y,d=Math.hypot(dx,dy)||1;const hk=d<260?620:420;p.vx+=dx/d*hk*STEP;p.vy+=dy/d*hk*STEP;}
     }
-    stepProj(p,STEP);
+    stepProjSafe(p,STEP);
     if(p.power&&Math.random()<.35)parts.push({x:p.x,y:p.y,vx:(Math.random()-.5)*40,vy:-30-Math.random()*30,t:.35,c:Math.random()<.5?'#ff6b3d':'#ffd166',r:3});
     if(p.trail.length===0||Math.hypot(p.x-p.trail[p.trail.length-1][0],p.y-p.trail[p.trail.length-1][1])>8){p.trail.push([p.x,p.y]);if(p.trail.length>40)p.trail.shift();}
     if(p.x<-80||p.x>W+80||p.age>14){projs.splice(i,1);continue;}
@@ -3340,9 +3345,9 @@ function afterResolve(){
 /* ---- CPU ---- */
 function simLanding(me,ang,pw,wk,foe,wd){
   const w=WEAPONS[wk],a=(me.face>0?ang:180-ang)*Math.PI/180,v=w.fixedV||pw/100*VMAX;
-  const p={x:me.x+Math.cos(a)*24,y:me.y-16-Math.sin(a)*24,vx:Math.cos(a)*v,vy:-Math.sin(a)*v,w,age:0};
+  const mz=muzzle(me,a),p={x:mz[0],y:mz[1],vx:Math.cos(a)*v,vy:-Math.sin(a)*v,w,age:0};
   for(let n=0;n<1400;n++){
-    stepProj(p,STEP,wd);
+    stepProjSafe(p,STEP,wd);
     if(p.x<-80||p.x>W+80)return null;
     for(const q of players)if(q.alive&&q!==me&&Math.hypot(q.x-p.x,q.y-cyOf(q)-p.y)<hitRof(q))return p;
     if(isSolid(p.x,p.y))return p;
@@ -3548,7 +3553,6 @@ function draw(){
   ctx.save();applyCam(1);
   if(twCur&&TWK[mapKey])try{ctx.save();ctx.globalAlpha=.4;twFG(ctx,twCur,roundNo);ctx.restore();}catch(_){}
   ctx.drawImage(terr,0,0,W,H);
-  if(twCur&&twCur.kind==='hsinchu')try{twBells(ctx,twCur);}catch(_){}
   const t=performance.now()/1000;
   const wa=3+waveFX*7;ctx.beginPath();ctx.moveTo(-400,H+900);for(let x=-400;x<=W+400;x+=8)ctx.lineTo(x,water+Math.sin(x*.03+t*(2+waveFX*3))*wa);ctx.lineTo(W+400,H+900);ctx.closePath();
   ctx.fillStyle=MAP.water;ctx.fill();
@@ -3682,10 +3686,10 @@ function drawPreview(){
   const offs=w.spread?[-w.spread,0,w.spread]:[0];
   for(const o of offs){
     const aa=aimRad(c,o);
-    const p={x:c.x+Math.cos(aa)*24,y:c.y-16-Math.sin(aa)*24,vx:Math.cos(aa)*v,vy:-Math.sin(aa)*v,w,age:0};
+    const mz=muzzle(c,aa),p={x:mz[0],y:mz[1],vx:Math.cos(aa)*v,vy:-Math.sin(aa)*v,w,age:0};
     const pts=[];let hit=null;
     for(let n=0;n<1400;n++){
-      stepProj(p,STEP);
+      stepProjSafe(p,STEP);
       if(n%6===0)pts.push([p.x,p.y]);
       if(p.x<-20||p.x>W+20||p.y>H)break;
       if(isSolid(p.x,p.y)||p.y>=water){hit=[p.x,p.y];break;}
