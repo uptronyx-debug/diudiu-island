@@ -3096,13 +3096,22 @@ function armItem(k){
 }
 function doJump(){const c=players[turn];if(phase!=='aim'||charging||!grounded(c)||c.stamina<25)return;
   if(c.para){toast('麻到跳不起來',1500);SFX.zap();return;}
-  SFX.jump();c.walked=true;c.stamina-=c.soda?12:25;c.vy=(c.soda?1.22:1)*c.ch==='pine'?-305:c.ch==='hermit'&&c.shellType==='spring'?-330:-250;c.vx=c.face*(c.ch==='pine'?150:130);}
+  SFX.jump();c.walked=true;c.stamina-=c.soda?12:25;c.vy=(c.soda?1.22:1)*(c.ch==='pine'?-305:c.ch==='hermit'&&c.shellType==='spring'?-330:-250);c.vx=c.face*(c.ch==='pine'?150:130);}
+function solidIn(cx,cy,r){let n=0;for(let y=Math.max(0,Math.floor(cy-r));y<=Math.min(H-1,Math.ceil(cy+r));y+=2)for(let x=Math.max(0,Math.floor(cx-r));x<=Math.min(W-1,Math.ceil(cx+r));x+=2)if((x-cx)*(x-cx)+(y-cy)*(y-cy)<=r*r&&solid[y*W+x])n++;return n;}
+function digPlan(c){const ang=c.angle,f=c.face,R=16,pts=[];
+  if(ang<-40){for(let k=0;k<=30;k+=8)pts.push([c.x+f*Math.min(k,6)*.5,c.y-8+k]);}          // straight down
+  else if(ang>55){for(let k=0;k<=30;k+=8)pts.push([c.x+f*4,c.y-30-k]);}                    // straight up
+  else{const a=Math.max(-35,Math.min(40,ang))*Math.PI/180;                                  // tunnel along the aim, floor at foot level
+    for(let k=12;k<=44;k+=8)pts.push([c.x+f*k*Math.cos(a),c.y-R-k*Math.sin(a)]);}
+  return{pts,R};}
 function doDig(){const c=players[turn];if(phase!=='aim'||charging||!grounded(c)||c.stamina<15)return;
-  setAnim(c,'dig');c.walked=true;SFX.dig();
-  c.stamina-=15;
-  const a=aimRad(c),cx=c.x+Math.cos(a)*20,cy=c.y-14-Math.sin(a)*20;
-  carve(cx,cy,19,false);
-  for(let i=0;i<12;i++)parts.push({x:cx+(Math.random()-.5)*24,y:cy+(Math.random()-.5)*24,vx:(Math.random()-.5)*160,vy:-60-Math.random()*140,t:.6,c:'#c98a45',r:2.5});
+  const P=digPlan(c);let got=0;for(const[x,y]of P.pts)got+=solidIn(x,y,P.R);
+  setAnim(c,'dig');c.walked=true;
+  if(got<6){if(!c.cpu)toast('這裡沒有可挖的地面',1200);SFX.click&&SFX.click();return;}
+  SFX.dig();c.stamina-=15;
+  for(const[x,y]of P.pts)carve(x,y,P.R,false);
+  const[cx,cy]=P.pts[P.pts.length>>1];
+  for(let i=0;i<14;i++)parts.push({x:cx+(Math.random()-.5)*30,y:cy+(Math.random()-.5)*24,vx:(Math.random()-.5)*160,vy:-60-Math.random()*140,t:.6,c:'#c98a45',r:2.5});
 }
 
 function fire(){camPan.x=camPan.y=0;
@@ -3412,6 +3421,9 @@ function cpuWantMove(me){
   const foes=players.filter(p=>p.alive&&foeOf(me,p)&&!p.camo);if(!foes.length)return null;
   const f=foes.slice().sort((a,b)=>Math.abs(a.x-me.x)-Math.abs(b.x-me.x))[0],dist=Math.abs(f.x-me.x),lv=me.lv||diff;
   const chance={easy:.55,normal:.7,hard:.8}[lv]||.7;if(Math.random()>chance)return null;
+  { // a wall stands between us and a nearby foe: tunnel toward it
+    const sd=Math.sign(f.x-me.x)||1;let wall=0;for(let d=10;d<=60;d+=5)if(isSolid(me.x+sd*d,me.y-20)&&isSolid(me.x+sd*d,me.y-40)){wall=d;break;}
+    if(wall&&dist<420&&me.stamina>=40&&Math.random()<.85)return{stage:'move',dir:sd,left:60+Math.random()*60,t:4,stuck:0,jumped:true};}
   let dir;if(dist>650)dir=Math.sign(f.x-me.x);else if(dist<170)dir=-Math.sign(f.x-me.x)||1;else dir=Math.random()<.5?-1:1;
   return{stage:'move',dir,left:50+Math.random()*110,t:3,stuck:0,jumped:false};
 }
@@ -3422,13 +3434,19 @@ function cpuWalk(me,dt){
   const nx=me.x+mv*(me.swim?105:70)*dt;
   if(nx<16||nx>W-16){cpu={stage:'think',t:.35,moved:true};return;}
   const g=cpuGround(nx,me.y);
-  if(g==null||g>=water-8){if(me.ch!=='shark'){cpu={stage:'think',t:.35,moved:true};return;}} // cliff or sea ahead: stop
+  if(g==null||g>=water-8){if(me.ch!=='shark'){ // cliff or sea ahead: jump the gap if there is land within reach, otherwise stop
+      if(!cpu.jumped&&me.stamina>=25&&!me.para){for(let d=40;d<=120;d+=8){const lx=me.x+mv*d;if(lx<20||lx>W-20)break;const lg=cpuGround(lx,me.y-24);
+        if(lg!=null&&lg<water-10&&lg>me.y-26&&lg<me.y+40&&bodyFree(lx,lg)){cpu.jumped=true;me.angle=45;doJump();cpu={stage:'think',t:.5,moved:true};return;}}}
+      cpu={stage:'think',t:.35,moved:true};return;}}
   for(let up=0;up<=16;up++){if(bodyFree(nx,me.y-up)){me.x=nx;me.y-=up;me.walkT=.12;me.walked=true;cpu.left-=Math.abs(nx-(me.x-mv*0));
       me._st=(me._st||0)-dt;if(me._st<=0){me._st=.22;SFX.step();}
       me.stamina=Math.max(0,me.stamina-70*dt*(up>6?.55:.35)*(me.ch==='turtle'?1.25:me.ch==='pine'?.8:1));
       let d=0;while(d<10&&!me.swim&&!onGround(me)&&bodyFree(me.x,me.y+1)){me.y++;d++;}cpu.left-=70*dt;cpu.stuck=0;return;}}
   cpu.stuck+=dt;
-  if(cpu.stuck>.3){if(!cpu.jumped&&me.stamina>=25){cpu.jumped=true;cpu.stuck=0;doJump();}else cpu={stage:'think',t:.35,moved:true};}
+  if(cpu.stuck>.3){cpu.stuck=0;
+    if(!cpu.jumped&&me.stamina>=25){cpu.jumped=true;doJump();}
+    else if((cpu.digs||0)<3&&me.stamina>=20){cpu.digs=(cpu.digs||0)+1;const sa=me.angle;me.angle=8;doDig();me.angle=sa;cpu.t=Math.max(cpu.t,1);}
+    else cpu={stage:'think',t:.35,moved:true};}
 }
 function cpuUpdate(dt){
   const me=players[turn];
@@ -3463,9 +3481,11 @@ function update(dt){
     else if(c.cpu||ON&&own&&c.uid&&c.uid!==ON.me){if(!cpu)cpu={stage:'think',t:.6};if(grounded(c))cpuUpdate(dt);}
     else{
       if(!charging&&grounded(c)){
-        const mv=(input.right?1:0)-(input.left?1:0);
+        const mv=(input.right?1:0)-(input.left?1:0);if(!mv)c.turnT=0;
         if(mv&&c.para){c.face=mv;if(!c.stuckNote){c.stuckNote=true;toast('全身麻麻的⋯⋯這回合走不動',2000);SFX.zap();}}
-        else if(mv){c.face=mv;
+        else if(mv&&mv!==c.face){c.face=mv;c.turnT=.2;}
+        else if(mv&&c.turnT>0){c.turnT-=dt;}
+        else if(mv){
           let moved=false;
           if(c.stamina>0){const nx=c.x+mv*(c.swim?105:70)*dt;
             if(nx>10&&nx<W-10){
@@ -3660,15 +3680,8 @@ function drawSky(){
     ctx.restore();
   }
   ctx.restore();
-  // last 10 seconds: huge countdown
-  if(phase==='aim'&&c&&!c.cpu&&!gmFor('time',c)&&timeLeft<=10&&timeLeft>0){
-    const sec=Math.ceil(timeLeft),fr=timeLeft-Math.floor(timeLeft),pop=1+Math.max(0,fr-.7)*2.2,hot=sec<=5;
-    ctx.save();ctx.translate(VW/2+(hot&&!reduce?(Math.random()-.5)*4:0),VH*.5);ctx.scale(pop*u,pop*u);ctx.rotate(Math.sin(tm*7)*.06);
-    ctx.globalAlpha=.88;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';ctx.font=TC(900,110);
-    ctx.lineWidth=16;ctx.strokeStyle=INKC;ctx.strokeText(String(sec),0,0);ctx.lineWidth=7;ctx.strokeStyle=hot?'#ff6b3d':'#ffb547';ctx.strokeText(String(sec),0,0);ctx.fillStyle='#fff';ctx.fillText(String(sec),0,0);
-    if(sec<=3){ctx.font=TC(900,24);ctx.lineWidth=7;ctx.strokeStyle=INKC;ctx.strokeText('快丟啦！',0,74);ctx.fillStyle='#ffe066';ctx.fillText('快丟啦！',0,74);}
-    ctx.restore();
-    if(sec!==lastSec){lastSec=sec;tone(hot?1400:1000,.06,{type:'square',vol:.12});tone(hot?700:500,.09,{type:'triangle',vol:.12,delay:.03});}
+  if(phase==='aim'&&c&&!c.cpu&&!gmFor('time',c)&&timeLeft<=5&&timeLeft>0){const sec=Math.ceil(timeLeft);
+    if(sec!==lastSec){lastSec=sec;tone(1200,.05,{type:'square',vol:.08});}
   }else lastSec=0;
 }
 let weather=[];
